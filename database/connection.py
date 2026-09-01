@@ -154,7 +154,11 @@ class _ConexionNube:
         self._conn = conn
 
     def execute(self, sql, params=()):
-        return _CursorDict(self._conn.execute(sql, params))
+        # El binding de libsql en Linux (Streamlit Cloud) exige que los
+        # parámetros lleguen como list, no como tuple — a diferencia del
+        # build de Windows, que acepta ambos. Se normaliza acá para no
+        # tocar cada conexion.execute(sql, (valor,)) de models/.
+        return _CursorDict(self._conn.execute(sql, list(params)))
 
     def __getattr__(self, nombre):
         return getattr(self._conn, nombre)
