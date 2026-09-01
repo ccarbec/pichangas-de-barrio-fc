@@ -50,8 +50,15 @@ def _vista_jugador(partido, jugador):
 
     col_info, col_accion = st.columns([3, 2])
     with col_info:
-        st.markdown(f"**{partido['fecha']} · {partido['hora']}** — {partido['cancha']}")
-        st.caption(f"Cupo: {confirmados}/{partido['cupo_max']} · S/ {partido['costo_por_jugador']:.2f} por jugador")
+        st.markdown(
+            f"**{partido['fecha']} · {partido['hora']}** — {partido['cancha']} &nbsp; "
+            + estilos.badge_cuenta_regresiva(partido["fecha"]),
+            unsafe_allow_html=True,
+        )
+        st.progress(
+            min(confirmados / partido["cupo_max"], 1.0),
+            text=f"Cupo: {confirmados}/{partido['cupo_max']} · S/ {partido['costo_por_jugador']:.2f} por jugador",
+        )
         if partido["notas"]:
             st.caption(partido["notas"])
         if inscrito_activo:
@@ -101,10 +108,15 @@ def _vista_admin(partido):
     confirmados = inscripciones.contar_confirmados(partido["id"])
     col_info, col_a, col_b = st.columns([3, 1, 1])
     with col_info:
-        st.markdown(f"**{partido['fecha']} · {partido['hora']}** — {partido['cancha']}")
-        st.caption(
-            f"Cupo: {confirmados}/{partido['cupo_max']} · Cancha S/ {partido['costo_cancha']:.2f} · "
-            f"S/ {partido['costo_por_jugador']:.2f} por jugador"
+        st.markdown(
+            f"**{partido['fecha']} · {partido['hora']}** — {partido['cancha']} &nbsp; "
+            + estilos.badge_cuenta_regresiva(partido["fecha"]),
+            unsafe_allow_html=True,
+        )
+        st.progress(
+            min(confirmados / partido["cupo_max"], 1.0),
+            text=f"Cupo: {confirmados}/{partido['cupo_max']} · Cancha S/ {partido['costo_cancha']:.2f} · "
+            f"S/ {partido['costo_por_jugador']:.2f} por jugador",
         )
     if partido["estado"] == "programado":
         if col_a.button("✅ Jugado", key=f"jugado_{partido['id']}"):
@@ -121,7 +133,7 @@ def _vista_admin(partido):
         for i in inscritos:
             nombre_mostrar = i["apodo"] or i["nombre"]
             cols = st.columns([2, 1, 1, 1])
-            cols[0].write(f"**{nombre_mostrar}** ({i['telefono']})")
+            cols[0].write(f"{estilos.emoji_posicion(i.get('posicion'))} **{nombre_mostrar}** ({i['telefono']})")
             cols[1].markdown(estilos.badge_inscripcion(i["estado"]), unsafe_allow_html=True)
             cols[2].markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
             if partido["estado"] == "jugado":

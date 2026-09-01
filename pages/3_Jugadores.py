@@ -50,7 +50,7 @@ with tab_lista:
                         "Nombre": j["nombre"],
                         "Apodo": j["apodo"] or "",
                         "Celular": j["telefono"],
-                        "Posición": j["posicion"] or "",
+                        "Posición": f"{estilos.emoji_posicion(j['posicion'])} {j['posicion'] or ''}".strip(),
                         "Estado": j["estado"].capitalize(),
                     }
                     for j in lista

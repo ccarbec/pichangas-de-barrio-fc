@@ -125,7 +125,8 @@ else:
                 estado_txt = estilos.badge_inscripcion(inscripcion["estado"])
             st.markdown(
                 f"**{partido['fecha']} {partido['hora']}** — {partido['cancha']} · "
-                f"S/ {partido['costo_por_jugador']:.2f} · {estado_txt}",
+                f"S/ {partido['costo_por_jugador']:.2f} · {estado_txt} &nbsp; "
+                + estilos.badge_cuenta_regresiva(partido["fecha"]),
                 unsafe_allow_html=True,
             )
         st.page_link("pages/1_Partidos.py", label="Ir a Partidos para confirmar →", icon="📅")

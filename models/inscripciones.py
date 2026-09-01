@@ -107,6 +107,7 @@ def listar_inscripciones_partido(partido_id):
                 usuarios.nombre,
                 usuarios.telefono,
                 jugadores.apodo,
+                jugadores.posicion,
                 COALESCE(pagos.estado, 'sin_pago') AS estado_pago,
                 pagos.id AS pago_id
             FROM inscripciones
