@@ -67,3 +67,15 @@ def reactivar_estadio(estadio_id):
         conexion.commit()
     finally:
         conexion.close()
+
+
+def subir_foto(estadio_id, imagen_bytes, mime):
+    conexion = get_connection()
+    try:
+        conexion.execute(
+            "UPDATE estadios SET foto_img = ?, foto_mime = ? WHERE id = ?",
+            (imagen_bytes, mime, estadio_id),
+        )
+        conexion.commit()
+    finally:
+        conexion.close()

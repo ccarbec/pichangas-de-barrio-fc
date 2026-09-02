@@ -58,12 +58,46 @@ with tab_estadios:
             use_container_width=True,
         )
 
-        st.markdown("##### Editar")
-        opciones_estadio = {e["nombre"]: e["id"] for e in lista_estadios}
-        seleccion_estadio = st.selectbox("Zona / estadio", list(opciones_estadio.keys()))
-        estadio = estadios.obtener_estadio(opciones_estadio[seleccion_estadio])
+        st.markdown("##### Ver / editar uno por uno")
+        nombres_estadio = [e["nombre"] for e in lista_estadios]
 
-        with st.form("editar_estadio"):
+        indice_e = st.session_state.get("estadio_indice", 0)
+        indice_e = max(0, min(indice_e, len(lista_estadios) - 1))
+        if st.session_state.get("estadio_selectbox") not in nombres_estadio:
+            st.session_state["estadio_selectbox"] = nombres_estadio[indice_e]
+
+        col_prev_e, col_sel_e, col_next_e = st.columns([1, 3, 1])
+        if col_prev_e.button("⬅️ Anterior", disabled=indice_e == 0, key="estadio_prev"):
+            st.session_state["estadio_indice"] = indice_e - 1
+            st.session_state["estadio_selectbox"] = nombres_estadio[indice_e - 1]
+            st.rerun()
+        seleccion_estadio = col_sel_e.selectbox("Zona / estadio", nombres_estadio, key="estadio_selectbox")
+        indice_e = nombres_estadio.index(seleccion_estadio)
+        st.session_state["estadio_indice"] = indice_e
+        if col_next_e.button("Siguiente ➡️", disabled=indice_e == len(lista_estadios) - 1, key="estadio_next"):
+            st.session_state["estadio_indice"] = indice_e + 1
+            st.session_state["estadio_selectbox"] = nombres_estadio[indice_e + 1]
+            st.rerun()
+        st.caption(f"{indice_e + 1} de {len(lista_estadios)}")
+
+        estadio = lista_estadios[indice_e]
+
+        col_foto_e, col_form_e = st.columns([1, 2])
+        with col_foto_e:
+            foto_estadio_bytes, _ = (estadio.get("foto_img"), estadio.get("foto_mime"))
+            if foto_estadio_bytes:
+                st.image(foto_estadio_bytes, width=200)
+            else:
+                st.caption("Sin foto todavía.")
+            nueva_foto_estadio = st.file_uploader(
+                "Subir/cambiar foto", type=["png", "jpg", "jpeg"], key=f"foto_estadio_{estadio['id']}"
+            )
+            if nueva_foto_estadio is not None and st.button("Guardar foto", key=f"guardar_foto_estadio_{estadio['id']}"):
+                estadios.subir_foto(estadio["id"], nueva_foto_estadio.getvalue(), nueva_foto_estadio.type)
+                st.toast("Foto actualizada.", icon="📸")
+                st.rerun()
+
+        with col_form_e, st.form("editar_estadio"):
             nombre_editado = st.text_input("Nombre", value=estadio["nombre"])
             col_c, col_j = st.columns(2)
             costo_cancha_editado = col_c.number_input(

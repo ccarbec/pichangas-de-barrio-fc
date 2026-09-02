@@ -39,12 +39,22 @@ def obtener_jugador_por_usuario(usuario_id):
         conexion.close()
 
 
+_COLUMNAS_SIN_FOTO = """
+    jugadores.id, jugadores.usuario_id, jugadores.apodo, jugadores.apellidos,
+    jugadores.posicion, jugadores.equipo_hincha, jugadores.camiseta, jugadores.resena,
+    jugadores.foto_mime, jugadores.estado, jugadores.fecha_registro,
+    usuarios.nombre, usuarios.telefono, usuarios.estado AS estado_usuario
+"""
+
+
 def obtener_jugador(jugador_id):
+    """No trae la foto (puede pesar bastante) — usar obtener_foto() aparte
+    solo cuando de verdad se va a mostrar."""
     conexion = get_connection()
     try:
         fila = conexion.execute(
-            """
-            SELECT jugadores.*, usuarios.nombre, usuarios.telefono, usuarios.estado AS estado_usuario
+            f"""
+            SELECT {_COLUMNAS_SIN_FOTO}
             FROM jugadores JOIN usuarios ON usuarios.id = jugadores.usuario_id
             WHERE jugadores.id = ?
             """,
@@ -56,10 +66,12 @@ def obtener_jugador(jugador_id):
 
 
 def listar_jugadores(solo_activos=True):
+    """No trae la foto de cada jugador — se pediría el blob de todos cada
+    vez que se llena un selectbox. Para mostrar fotos, usar obtener_foto()."""
     conexion = get_connection()
     try:
-        consulta = """
-            SELECT jugadores.*, usuarios.nombre, usuarios.telefono, usuarios.estado AS estado_usuario
+        consulta = f"""
+            SELECT {_COLUMNAS_SIN_FOTO}
             FROM jugadores JOIN usuarios ON usuarios.id = jugadores.usuario_id
         """
         if solo_activos:
@@ -67,6 +79,43 @@ def listar_jugadores(solo_activos=True):
         consulta += " ORDER BY usuarios.nombre, jugadores.apellidos"
         filas = conexion.execute(consulta).fetchall()
         return [dict(f) for f in filas]
+    finally:
+        conexion.close()
+
+
+def obtener_foto(jugador_id):
+    """Devuelve (bytes, mime) o (None, None) si no tiene foto — se pide
+    aparte de obtener_jugador()/listar_jugadores() para no cargar el blob
+    en listas donde no hace falta."""
+    conexion = get_connection()
+    try:
+        fila = conexion.execute(
+            "SELECT foto_img, foto_mime FROM jugadores WHERE id = ?", (jugador_id,)
+        ).fetchone()
+        if not fila or not fila["foto_img"]:
+            return None, None
+        return fila["foto_img"], fila["foto_mime"]
+    finally:
+        conexion.close()
+
+
+def subir_foto(jugador_id, imagen_bytes, mime):
+    conexion = get_connection()
+    try:
+        conexion.execute(
+            "UPDATE jugadores SET foto_img = ?, foto_mime = ? WHERE id = ?",
+            (imagen_bytes, mime, jugador_id),
+        )
+        conexion.commit()
+    finally:
+        conexion.close()
+
+
+def actualizar_resena(jugador_id, resena):
+    conexion = get_connection()
+    try:
+        conexion.execute("UPDATE jugadores SET resena = ? WHERE id = ?", (resena.strip(), jugador_id))
+        conexion.commit()
     finally:
         conexion.close()
 

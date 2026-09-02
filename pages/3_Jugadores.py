@@ -13,7 +13,7 @@ st.title("🧑‍🤝‍🧑 Jugadores")
 
 POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"]
 
-tab_lista, tab_nuevo = st.tabs(["Lista de jugadores", "➕ Agregar jugador"])
+tab_lista, tab_nuevo, tab_perfiles = st.tabs(["Lista de jugadores", "➕ Agregar jugador", "🖼️ Perfiles"])
 
 with tab_nuevo:
     st.caption("Normalmente cada jugador se crea su propia cuenta desde la pantalla de inicio. "
@@ -139,3 +139,66 @@ with tab_lista:
                     jugadores.eliminar_jugador(jugador["id"])
                     st.toast("Jugador eliminado.", icon="🗑️")
                     st.rerun()
+
+with tab_perfiles:
+    lista_perfil = jugadores.listar_jugadores(solo_activos=False)
+    if not lista_perfil:
+        st.info("Todavía no hay jugadores registrados.")
+    else:
+        etiquetas_perfil = [
+            f"{j['nombre']} {j.get('apellidos') or ''}".strip() + (f" ({j['apodo']})" if j["apodo"] else "")
+            for j in lista_perfil
+        ]
+
+        indice = st.session_state.get("perfil_indice", 0)
+        indice = max(0, min(indice, len(lista_perfil) - 1))
+        if st.session_state.get("perfil_selectbox") not in etiquetas_perfil:
+            st.session_state["perfil_selectbox"] = etiquetas_perfil[indice]
+
+        col_prev, col_sel, col_next = st.columns([1, 3, 1])
+        if col_prev.button("⬅️ Anterior", disabled=indice == 0):
+            st.session_state["perfil_indice"] = indice - 1
+            st.session_state["perfil_selectbox"] = etiquetas_perfil[indice - 1]
+            st.rerun()
+        seleccion_perfil = col_sel.selectbox("Jugador", etiquetas_perfil, key="perfil_selectbox")
+        indice = etiquetas_perfil.index(seleccion_perfil)
+        st.session_state["perfil_indice"] = indice
+        if col_next.button("Siguiente ➡️", disabled=indice == len(lista_perfil) - 1):
+            st.session_state["perfil_indice"] = indice + 1
+            st.session_state["perfil_selectbox"] = etiquetas_perfil[indice + 1]
+            st.rerun()
+
+        jugador_perfil = lista_perfil[indice]
+        st.caption(f"{indice + 1} de {len(lista_perfil)}")
+
+        col_foto, col_info = st.columns([1, 2])
+        with col_foto:
+            foto_bytes, _ = jugadores.obtener_foto(jugador_perfil["id"])
+            if foto_bytes:
+                st.image(foto_bytes, width=200)
+            else:
+                st.caption("Sin foto todavía.")
+            nueva_foto_admin = st.file_uploader(
+                "Subir/cambiar foto", type=["png", "jpg", "jpeg"], key=f"foto_admin_{jugador_perfil['id']}"
+            )
+            if nueva_foto_admin is not None and st.button("Guardar foto", key=f"guardar_foto_{jugador_perfil['id']}"):
+                jugadores.subir_foto(jugador_perfil["id"], nueva_foto_admin.getvalue(), nueva_foto_admin.type)
+                st.toast("Foto actualizada.", icon="📸")
+                st.rerun()
+
+        with col_info:
+            st.markdown(
+                f"### {estilos.emoji_posicion(jugador_perfil['posicion'])} "
+                f"{jugador_perfil['nombre']} {jugador_perfil.get('apellidos') or ''}"
+            )
+            if jugador_perfil["apodo"]:
+                st.caption(f"Apodo: {jugador_perfil['apodo']}")
+            st.write(f"**Posición:** {jugador_perfil['posicion'] or '—'}")
+            st.write(f"**Hincha de:** {jugador_perfil.get('equipo_hincha') or '—'}")
+            st.write(f"**Camiseta:** {jugador_perfil.get('camiseta') or '—'}")
+            st.write(f"**Celular:** {jugador_perfil['telefono']}")
+            st.markdown("**Reseña:**")
+            if jugador_perfil.get("resena"):
+                st.info(jugador_perfil["resena"])
+            else:
+                st.caption("Todavía no escribió una reseña sobre sí mismo.")

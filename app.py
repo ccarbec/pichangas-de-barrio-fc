@@ -109,6 +109,7 @@ else:
 
     col1, col2 = st.columns(2)
     col1.page_link("pages/1_Partidos.py", label="Ver partidos →", icon="📅")
+    col2.page_link("pages/6_Mi_Perfil.py", label="Mi perfil →", icon="👤")
 
     jugador = jugadores.obtener_jugador_por_usuario(usuario["id"])
     st.divider()

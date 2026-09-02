@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS jugadores (
     posicion TEXT,
     equipo_hincha TEXT DEFAULT '',
     camiseta TEXT DEFAULT '',
+    foto_img BLOB,
+    foto_mime TEXT,
+    resena TEXT DEFAULT '',
     estado TEXT NOT NULL DEFAULT 'activo',
     fecha_registro TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
@@ -128,6 +131,8 @@ CREATE TABLE IF NOT EXISTS estadios (
     nombre TEXT NOT NULL,
     costo_cancha REAL NOT NULL DEFAULT 0,
     costo_por_jugador REAL NOT NULL DEFAULT 0,
+    foto_img BLOB,
+    foto_mime TEXT,
     estado TEXT NOT NULL DEFAULT 'activo',
     fecha_creacion TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
@@ -160,6 +165,11 @@ MIGRACIONES = [
     "ALTER TABLE pagos ADD COLUMN metodo_pago TEXT DEFAULT 'yape'",
     "ALTER TABLE club_config ADD COLUMN monto_multa_tardanza REAL DEFAULT 5.0",
     "ALTER TABLE club_config ADD COLUMN monto_multa_no_asistio REAL DEFAULT 10.0",
+    "ALTER TABLE jugadores ADD COLUMN foto_img BLOB",
+    "ALTER TABLE jugadores ADD COLUMN foto_mime TEXT",
+    "ALTER TABLE jugadores ADD COLUMN resena TEXT DEFAULT ''",
+    "ALTER TABLE estadios ADD COLUMN foto_img BLOB",
+    "ALTER TABLE estadios ADD COLUMN foto_mime TEXT",
 ]
 
 
