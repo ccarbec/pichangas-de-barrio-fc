@@ -20,14 +20,7 @@ MAPA_ASISTENCIA = {
     "Sin marcar": None, "✅ Llegó": "llego", "⏰ Tardanza (multa)": "tardanza", "❌ No llegó (multa)": "no_llego",
 }
 MAPA_ASISTENCIA_INVERSO = {v: k for k, v in MAPA_ASISTENCIA.items()}
-
-
-def _nombre_completo(p):
-    """'Nombre Apellido' y, si tiene apodo, '(Apodo)' al final."""
-    base = f"{p.get('nombre') or ''} {p.get('apellidos') or ''}".strip()
-    if p.get("apodo"):
-        base += f" ({p['apodo']})"
-    return base or p.get("apodo", "")
+_nombre_completo = estilos.nombre_completo
 
 # ---------------------------------------------------------------- admin: crear
 if auth.es_admin():

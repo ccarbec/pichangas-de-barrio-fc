@@ -92,6 +92,7 @@ def listar_pagos_pendientes():
                 pagos.*,
                 usuarios.nombre,
                 jugadores.apodo,
+                jugadores.apellidos,
                 partidos.fecha AS partido_fecha,
                 partidos.hora AS partido_hora,
                 partidos.cancha AS partido_cancha

@@ -165,7 +165,7 @@ for i in confirmados:
     marcado = col_check.checkbox(
         "Enviar", key=clave_check, value=st.session_state.get(clave_check, True), label_visibility="collapsed"
     )
-    col_nombre.write(f"{estilos.emoji_posicion(i.get('posicion'))} **{i['apodo'] or i['nombre']}**")
+    col_nombre.write(f"{estilos.emoji_posicion(i.get('posicion'))} **{estilos.nombre_completo(i)}**")
     col_pago.markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
 
     if col_uno.button("📨 Uno", key=f"uno_{i['id']}"):
@@ -186,7 +186,7 @@ if not seleccionados:
 else:
     with st.expander(f"Vista previa — {len(seleccionados)} jugador(es) marcado(s)"):
         for i in seleccionados:
-            st.write(f"**{i['apodo'] or i['nombre']}**: {_armar(i, partido, texto_plantilla)}")
+            st.write(f"**{estilos.nombre_completo(i)}**: {_armar(i, partido, texto_plantilla)}")
 
     if st.button(f"📨 Enviar a los {len(seleccionados)} marcados", type="primary"):
         destinatarios = [

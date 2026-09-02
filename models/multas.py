@@ -103,7 +103,7 @@ def listar_pendientes_verificacion():
         filas = conexion.execute(
             """
             SELECT
-                multas.*, usuarios.nombre, jugadores.apodo,
+                multas.*, usuarios.nombre, jugadores.apodo, jugadores.apellidos,
                 partidos.fecha AS partido_fecha, partidos.hora AS partido_hora
             FROM multas
             JOIN jugadores ON jugadores.id = multas.jugador_id

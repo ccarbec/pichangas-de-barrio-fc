@@ -71,7 +71,7 @@ with tab_lista:
         )
 
         st.markdown("##### Editar jugador")
-        opciones = {f"{j['apodo'] or j['nombre']} ({j['telefono']})": j["id"] for j in lista}
+        opciones = {f"{estilos.nombre_completo(j)} ({j['telefono']})": j["id"] for j in lista}
         seleccion = st.selectbox("Jugador", list(opciones.keys()))
         jugador = jugadores.obtener_jugador(opciones[seleccion])
         usuario_jugador = usuarios.obtener_usuario(jugador["usuario_id"])

@@ -135,3 +135,14 @@ def badge_cuenta_regresiva(fecha_iso):
     if dias == 1:
         return _badge(AMBAR, AMBAR_FONDO, "¡Mañana!")
     return _badge(PASTO, PASTO_CLARO, f"En {dias} días")
+
+
+def nombre_completo(p):
+    """'Apellido, Nombre' (para que el orden alfabético por apellido se
+    vea claro de un vistazo), y el apodo entre paréntesis si tiene."""
+    apellidos = (p.get("apellidos") or "").strip()
+    nombre = (p.get("nombre") or "").strip()
+    base = f"{apellidos}, {nombre}" if apellidos else nombre
+    if p.get("apodo"):
+        base += f" ({p['apodo']})"
+    return base

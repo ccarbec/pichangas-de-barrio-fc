@@ -20,7 +20,7 @@ with tab_pendientes:
         st.success("No hay comprobantes pendientes de verificar.")
     for pago in lista:
         st.divider()
-        nombre_mostrar = pago["apodo"] or pago["nombre"]
+        nombre_mostrar = estilos.nombre_completo(pago)
         col_img, col_info = st.columns([1, 2])
         with col_img:
             if pago["comprobante_img"]:
@@ -50,7 +50,7 @@ with tab_multas:
         st.markdown("##### Comprobantes por revisar")
         for m in pendientes_verificacion:
             st.divider()
-            nombre_mostrar = m["apodo"] or m["nombre"]
+            nombre_mostrar = estilos.nombre_completo(m)
             col_img, col_info = st.columns([1, 2])
             with col_img:
                 if m["comprobante_img"]:
@@ -77,12 +77,13 @@ with tab_multas:
     todas_pendientes = []
     for p in lista_partidos_multa:
         todas_pendientes.extend([m for m in multas.listar_multas_partido(p["id"]) if m["estado"] == "debe"])
+    todas_pendientes.sort(key=lambda m: ((m.get("apellidos") or ""), m.get("nombre") or ""))
 
     if not todas_pendientes:
         st.success("No hay multas pendientes de pago.")
     for m in todas_pendientes:
         col_nombre, col_tipo, col_monto, col_check = st.columns([2, 1.3, 1, 1.3])
-        col_nombre.write(f"**{m['apodo'] or m['nombre']}**")
+        col_nombre.write(f"**{estilos.nombre_completo(m)}**")
         col_tipo.write("Tardanza" if m["tipo"] == "tardanza" else "No asistencia")
         col_monto.write(f"S/ {m['monto']:.2f}")
         if col_check.checkbox("Pagó en efectivo", key=f"efectivo_multa_{m['id']}"):
