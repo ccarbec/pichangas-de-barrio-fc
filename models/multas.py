@@ -81,7 +81,7 @@ def listar_multas_partido(partido_id):
     try:
         filas = conexion.execute(
             """
-            SELECT multas.*, usuarios.nombre, jugadores.apodo
+            SELECT multas.*, usuarios.nombre, jugadores.apodo, jugadores.apellidos
             FROM multas
             JOIN jugadores ON jugadores.id = multas.jugador_id
             JOIN usuarios ON usuarios.id = jugadores.usuario_id

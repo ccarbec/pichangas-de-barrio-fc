@@ -21,6 +21,14 @@ MAPA_ASISTENCIA = {
 }
 MAPA_ASISTENCIA_INVERSO = {v: k for k, v in MAPA_ASISTENCIA.items()}
 
+
+def _nombre_completo(p):
+    """'Nombre Apellido' y, si tiene apodo, '(Apodo)' al final."""
+    base = f"{p.get('nombre') or ''} {p.get('apellidos') or ''}".strip()
+    if p.get("apodo"):
+        base += f" ({p['apodo']})"
+    return base or p.get("apodo", "")
+
 # ---------------------------------------------------------------- admin: crear
 if auth.es_admin():
     with st.expander("➕ Programar nueva pichanga"):
@@ -189,20 +197,20 @@ def _vista_admin(partido):
         disponibles = [j for j in jugadores.listar_jugadores() if j["id"] not in ids_ya_inscritos]
         if disponibles:
             col_sel, col_btn = st.columns([3, 1])
-            opciones = {f"{j['apodo'] or j['nombre']} ({j['telefono']})": j["id"] for j in disponibles}
+            opciones = {f"{_nombre_completo(j)} — {j['telefono']}": j for j in disponibles}
             elegido = col_sel.selectbox(
                 "➕ Agregar jugador registrado", list(opciones.keys()), key=f"agregar_{partido['id']}"
             )
+            jugador_elegido = opciones[elegido]
             if col_btn.button("Agregar", key=f"btn_agregar_{partido['id']}"):
-                jugador_id_elegido = opciones[elegido]
-                if multas.tiene_multa_no_asistio_pendiente(jugador_id_elegido):
-                    st.error(f"{elegido.split(' (')[0]} tiene una multa por no asistencia sin pagar — no puede jugar hasta pagarla.")
+                if multas.tiene_multa_no_asistio_pendiente(jugador_elegido["id"]):
+                    st.error(f"{_nombre_completo(jugador_elegido)} tiene una multa por no asistencia sin pagar — no puede jugar hasta pagarla.")
                 else:
-                    estado = inscripciones.inscribir_jugador(partido["id"], jugador_id_elegido, partido["cupo_max"])
+                    estado = inscripciones.inscribir_jugador(partido["id"], jugador_elegido["id"], partido["cupo_max"])
                     if estado == "confirmado":
-                        st.toast(f"{elegido.split(' (')[0]} agregado y confirmado.", icon="✅")
+                        st.toast(f"{_nombre_completo(jugador_elegido)} agregado y confirmado.", icon="✅")
                     else:
-                        st.toast(f"Cupo lleno: {elegido.split(' (')[0]} quedó en lista de espera.", icon="⏳")
+                        st.toast(f"Cupo lleno: {_nombre_completo(jugador_elegido)} quedó en lista de espera.", icon="⏳")
                     st.rerun()
         else:
             st.caption("Ya están todos los jugadores registrados en esta lista.")
@@ -213,12 +221,16 @@ def _vista_admin(partido):
         ids_en_partido = {x["jugador_id"] for x in inscritos}
 
         for i in inscritos:
-            nombre_mostrar = i["apodo"] or i["nombre"]
+            nombre_mostrar = _nombre_completo(i)
             with st.container(border=True):
-                col_n, col_i, col_p = st.columns([2, 1, 1.3])
+                col_n, col_i, col_p, col_x = st.columns([2.3, 1, 1.1, 0.8])
                 col_n.write(f"{estilos.emoji_posicion(i.get('posicion'))} **{nombre_mostrar}** ({i['telefono']})")
                 col_i.markdown(estilos.badge_inscripcion(i["estado"]), unsafe_allow_html=True)
                 col_p.markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
+                if col_x.button("🗑️ Quitar", key=f"quitar_{i['id']}"):
+                    inscripciones.cancelar_inscripcion(i["id"])
+                    st.toast(f"{nombre_mostrar} fue quitado de esta pichanga.", icon="🗑️")
+                    st.rerun()
 
                 if i["estado"] != "confirmado" or partido["estado"] == "cancelado":
                     continue
@@ -259,13 +271,13 @@ def _vista_admin(partido):
                             st.caption("No hay más jugadores registrados disponibles para reemplazar.")
                         else:
                             col_sel_r, col_btn_r = st.columns([3, 1])
-                            opciones_r = {f"{j['apodo'] or j['nombre']} ({j['telefono']})": j["id"] for j in candidatos}
+                            opciones_r = {f"{_nombre_completo(j)} — {j['telefono']}": j["id"] for j in candidatos}
                             elegido_r = col_sel_r.selectbox(
                                 f"Reemplazo para {nombre_mostrar}", list(opciones_r.keys()), key=f"sel_reemplazo_{i['id']}"
                             )
                             if col_btn_r.button("Confirmar", key=f"confirmar_reemplazo_{i['id']}"):
                                 inscripciones.reemplazar(i["id"], opciones_r[elegido_r])
-                                st.toast(f"{elegido_r.split(' (')[0]} entra en lugar de {nombre_mostrar}.", icon="🔁")
+                                st.toast(f"{elegido_r.split(' — ')[0]} entra en lugar de {nombre_mostrar}.", icon="🔁")
                                 st.session_state[clave_mostrar] = False
                                 st.rerun()
 
@@ -288,7 +300,7 @@ def _vista_admin(partido):
                 pd.DataFrame(
                     [
                         {
-                            "Jugador": i["apodo"] or i["nombre"],
+                            "Jugador": _nombre_completo(i),
                             "Pago": i["estado_pago"].replace("_", " ").capitalize(),
                             "Asistencia": {
                                 "llego": "✅ Llegó", "tardanza": "⏰ Tardanza", "no_llego": "❌ No llegó",
@@ -307,7 +319,7 @@ def _vista_admin(partido):
                     pd.DataFrame(
                         [
                             {
-                                "Jugador": m["apodo"] or m["nombre"],
+                                "Jugador": _nombre_completo(m),
                                 "Tipo": "Tardanza" if m["tipo"] == "tardanza" else "No asistencia",
                                 "Monto": f"S/ {m['monto']:.2f}",
                                 "Estado": "Pagado" if m["estado"] == "pagado" else "Debe",

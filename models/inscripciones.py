@@ -119,6 +119,7 @@ def listar_inscripciones_partido(partido_id):
                 usuarios.nombre,
                 usuarios.telefono,
                 jugadores.apodo,
+                jugadores.apellidos,
                 jugadores.posicion,
                 COALESCE(pagos.estado, 'sin_pago') AS estado_pago,
                 pagos.id AS pago_id
@@ -129,7 +130,7 @@ def listar_inscripciones_partido(partido_id):
             WHERE inscripciones.partido_id = ? AND inscripciones.estado != 'cancelado'
             ORDER BY
                 CASE inscripciones.estado WHEN 'confirmado' THEN 0 ELSE 1 END,
-                inscripciones.fecha_inscripcion
+                usuarios.nombre, jugadores.apellidos
             """,
             (partido_id,),
         ).fetchall()

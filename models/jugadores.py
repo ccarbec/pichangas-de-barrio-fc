@@ -64,7 +64,7 @@ def listar_jugadores(solo_activos=True):
         """
         if solo_activos:
             consulta += " WHERE jugadores.estado = 'activo' AND usuarios.estado = 'activo'"
-        consulta += " ORDER BY usuarios.nombre"
+        consulta += " ORDER BY usuarios.nombre, jugadores.apellidos"
         filas = conexion.execute(consulta).fetchall()
         return [dict(f) for f in filas]
     finally:
