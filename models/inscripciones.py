@@ -138,11 +138,13 @@ def listar_inscripciones_partido(partido_id):
         conexion.close()
 
 
-def marcar_asistencia(inscripcion_id, asistio):
+def marcar_asistencia(inscripcion_id, estado):
+    """estado: 'llego' / 'tardanza' / 'no_llego' (o None para "sin marcar").
+    Tardanza y no_llego generan multa aparte — ver pages/1_Partidos.py."""
     conexion = get_connection()
     try:
         conexion.execute(
-            "UPDATE inscripciones SET asistio = ? WHERE id = ?", (1 if asistio else 0, inscripcion_id)
+            "UPDATE inscripciones SET asistio = ? WHERE id = ?", (estado, inscripcion_id)
         )
         conexion.commit()
     finally:

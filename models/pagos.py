@@ -54,6 +54,35 @@ def registrar_pago(inscripcion_id, monto, imagen_bytes, mime):
         conexion.close()
 
 
+def marcar_pago_manual(inscripcion_id, monto, verificado_por):
+    """El admin marca el pago como recibido en efectivo, sin necesidad de
+    que el jugador haya subido comprobante de Yape."""
+    existente = obtener_pago_por_inscripcion(inscripcion_id)
+    conexion = get_connection()
+    try:
+        if existente:
+            conexion.execute(
+                """
+                UPDATE pagos
+                SET monto = ?, estado = 'verificado', metodo_pago = 'efectivo',
+                    verificado_por = ?, fecha_verificacion = datetime('now','localtime'), nota = NULL
+                WHERE id = ?
+                """,
+                (monto, verificado_por, existente["id"]),
+            )
+        else:
+            conexion.execute(
+                """
+                INSERT INTO pagos (inscripcion_id, monto, estado, metodo_pago, verificado_por, fecha_verificacion)
+                VALUES (?, ?, 'verificado', 'efectivo', ?, datetime('now','localtime'))
+                """,
+                (inscripcion_id, monto, verificado_por),
+            )
+        conexion.commit()
+    finally:
+        conexion.close()
+
+
 def listar_pagos_pendientes():
     conexion = get_connection()
     try:

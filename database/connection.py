@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS pagos (
     comprobante_img BLOB,
     comprobante_mime TEXT,
     estado TEXT NOT NULL DEFAULT 'pendiente',
+    metodo_pago TEXT DEFAULT 'yape',
     fecha_pago TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     verificado_por INTEGER REFERENCES usuarios(id),
     fecha_verificacion TEXT,
@@ -93,7 +94,30 @@ CREATE TABLE IF NOT EXISTS pagos (
 CREATE TABLE IF NOT EXISTS club_config (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     nombre_yape TEXT,
-    telefono_yape TEXT
+    telefono_yape TEXT,
+    monto_multa_tardanza REAL DEFAULT 5.0,
+    monto_multa_no_asistio REAL DEFAULT 10.0
+);
+
+-- Multas: tardanza o no-asistencia a un partido confirmado. Se pagan igual
+-- que la inscripción — Yape (sube comprobante) o efectivo (el admin lo
+-- marca a mano). Mientras una multa de tipo 'no_asistio' siga sin pagar,
+-- ese jugador no puede confirmar en ningún otro partido (ver
+-- models/multas.py::tiene_multa_no_asistio_pendiente).
+CREATE TABLE IF NOT EXISTS multas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    jugador_id INTEGER NOT NULL REFERENCES jugadores(id),
+    partido_id INTEGER REFERENCES partidos(id),
+    tipo TEXT NOT NULL,
+    monto REAL NOT NULL,
+    estado TEXT NOT NULL DEFAULT 'debe',
+    comprobante_img BLOB,
+    comprobante_mime TEXT,
+    metodo_pago TEXT,
+    verificado_por INTEGER REFERENCES usuarios(id),
+    fecha_creacion TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    fecha_pago TEXT,
+    nota TEXT
 );
 
 -- Historial de recordatorios de WhatsApp mandados por scripts/recordatorios_auto.py
@@ -121,6 +145,9 @@ MIGRACIONES = [
     "ALTER TABLE jugadores ADD COLUMN apellidos TEXT DEFAULT ''",
     "ALTER TABLE jugadores ADD COLUMN equipo_hincha TEXT DEFAULT ''",
     "ALTER TABLE jugadores ADD COLUMN camiseta TEXT DEFAULT ''",
+    "ALTER TABLE pagos ADD COLUMN metodo_pago TEXT DEFAULT 'yape'",
+    "ALTER TABLE club_config ADD COLUMN monto_multa_tardanza REAL DEFAULT 5.0",
+    "ALTER TABLE club_config ADD COLUMN monto_multa_no_asistio REAL DEFAULT 10.0",
 ]
 
 

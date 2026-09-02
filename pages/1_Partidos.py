@@ -2,9 +2,10 @@
 
 import datetime
 
+import pandas as pd
 import streamlit as st
 
-from models import club_config, inscripciones, jugadores, pagos, partidos
+from models import club_config, inscripciones, jugadores, multas, pagos, partidos
 from utils import auth, estilos
 
 auth.requerir_login()
@@ -13,6 +14,12 @@ estilos.aplicar_tema()
 usuario = auth.usuario_actual()
 
 st.title("📅 Partidos")
+
+ETIQUETAS_ASISTENCIA = ["Sin marcar", "✅ Llegó", "⏰ Tardanza (multa)", "❌ No llegó (multa)"]
+MAPA_ASISTENCIA = {
+    "Sin marcar": None, "✅ Llegó": "llego", "⏰ Tardanza (multa)": "tardanza", "❌ No llegó (multa)": "no_llego",
+}
+MAPA_ASISTENCIA_INVERSO = {v: k for k, v in MAPA_ASISTENCIA.items()}
 
 # ---------------------------------------------------------------- admin: crear
 if auth.es_admin():
@@ -40,7 +47,36 @@ if auth.es_admin():
                 st.toast("Pichanga programada.", icon="✅")
                 st.rerun()
 
+# ---------------------------------------------------------------- jugador: mis multas
+if not auth.es_admin():
+    jugador_sesion = jugadores.obtener_jugador_por_usuario(usuario["id"])
+    mis_multas = multas.listar_multas_jugador(jugador_sesion["id"])
+    if mis_multas:
+        etiquetas_tipo = {"tardanza": "Tardanza", "no_asistio": "No asistencia"}
+        with st.expander(f"⚠️ Tienes {len(mis_multas)} multa(s) pendiente(s)", expanded=True):
+            for m in mis_multas:
+                st.markdown(
+                    f"**{etiquetas_tipo.get(m['tipo'], m['tipo'])}** — S/ {m['monto']:.2f} &nbsp; "
+                    + estilos.badge_pago("pendiente" if m["estado"] == "pendiente_verificacion" else "sin_pago"),
+                    unsafe_allow_html=True,
+                )
+                if m["tipo"] == "no_asistio":
+                    st.caption("No podrás confirmar en otra pichanga hasta pagar esta multa.")
+                if m["estado"] == "pendiente_verificacion":
+                    st.caption("Comprobante enviado, esperando verificación.")
+                else:
+                    comprobante_multa = st.file_uploader(
+                        "Sube tu comprobante de Yape para esta multa",
+                        type=["png", "jpg", "jpeg"], key=f"comprobante_multa_{m['id']}",
+                    )
+                    if comprobante_multa is not None and st.button("Enviar comprobante", key=f"enviar_multa_{m['id']}"):
+                        multas.subir_comprobante(m["id"], comprobante_multa.getvalue(), comprobante_multa.type)
+                        st.toast("Comprobante de multa enviado.", icon="📤")
+                        st.rerun()
+                st.divider()
+
 tab_programados, tab_historial = st.tabs(["Programados", "Jugados / cancelados"])
+
 
 # ---------------------------------------------------------------- vista jugador
 def _vista_jugador(partido, jugador):
@@ -66,7 +102,12 @@ def _vista_jugador(partido, jugador):
 
     with col_accion:
         if not inscrito_activo:
-            if st.button("Confirmar asistencia", key=f"confirmar_{partido['id']}", type="primary"):
+            bloqueado = multas.tiene_multa_no_asistio_pendiente(jugador["id"])
+            if bloqueado:
+                st.caption("Tienes una multa por no asistencia sin pagar — págala arriba para poder confirmar.")
+            if st.button(
+                "Confirmar asistencia", key=f"confirmar_{partido['id']}", type="primary", disabled=bloqueado
+            ):
                 estado = inscripciones.inscribir_jugador(partido["id"], jugador["id"], partido["cupo_max"])
                 if estado == "confirmado":
                     st.toast("¡Asistencia confirmada!", icon="✅")
@@ -105,7 +146,10 @@ def _vista_jugador(partido, jugador):
 
 # ---------------------------------------------------------------- vista admin
 def _vista_admin(partido):
-    confirmados = inscripciones.contar_confirmados(partido["id"])
+    inscritos = inscripciones.listar_inscripciones_partido(partido["id"])
+    confirmados_lista = [i for i in inscritos if i["estado"] == "confirmado"]
+    confirmados = len(confirmados_lista)
+
     col_info, col_a, col_b = st.columns([3, 1, 1])
     with col_info:
         st.markdown(
@@ -118,8 +162,18 @@ def _vista_admin(partido):
             text=f"Cupo: {confirmados}/{partido['cupo_max']} · Cancha S/ {partido['costo_cancha']:.2f} · "
             f"S/ {partido['costo_por_jugador']:.2f} por jugador",
         )
+
     if partido["estado"] == "programado":
-        if col_a.button("✅ Jugado", key=f"jugado_{partido['id']}"):
+        faltan_pago = sum(1 for i in confirmados_lista if i["estado_pago"] != "verificado")
+        autorizar_cierre = True
+        if faltan_pago:
+            st.warning(f"⚠️ Faltan {faltan_pago} jugador(es) por pagar.")
+            autorizar_cierre = st.checkbox(
+                "Autorizo cerrar el partido de todas formas", key=f"autorizar_cierre_{partido['id']}"
+            )
+        if col_a.button(
+            "✅ Cerrar (jugado)", key=f"jugado_{partido['id']}", disabled=bool(faltan_pago) and not autorizar_cierre
+        ):
             partidos.cambiar_estado(partido["id"], "jugado")
             st.rerun()
         if col_b.button("🚫 Cancelar", key=f"cancelarpartido_{partido['id']}"):
@@ -127,8 +181,6 @@ def _vista_admin(partido):
             st.rerun()
 
     with st.expander("Ver inscritos"):
-        inscritos = inscripciones.listar_inscripciones_partido(partido["id"])
-
         ids_ya_inscritos = {i["jugador_id"] for i in inscritos}
         disponibles = [j for j in jugadores.listar_jugadores() if j["id"] not in ids_ya_inscritos]
         if disponibles:
@@ -138,12 +190,16 @@ def _vista_admin(partido):
                 "➕ Agregar jugador registrado", list(opciones.keys()), key=f"agregar_{partido['id']}"
             )
             if col_btn.button("Agregar", key=f"btn_agregar_{partido['id']}"):
-                estado = inscripciones.inscribir_jugador(partido["id"], opciones[elegido], partido["cupo_max"])
-                if estado == "confirmado":
-                    st.toast(f"{elegido.split(' (')[0]} agregado y confirmado.", icon="✅")
+                jugador_id_elegido = opciones[elegido]
+                if multas.tiene_multa_no_asistio_pendiente(jugador_id_elegido):
+                    st.error(f"{elegido.split(' (')[0]} tiene una multa por no asistencia sin pagar — no puede jugar hasta pagarla.")
                 else:
-                    st.toast(f"Cupo lleno: {elegido.split(' (')[0]} quedó en lista de espera.", icon="⏳")
-                st.rerun()
+                    estado = inscripciones.inscribir_jugador(partido["id"], jugador_id_elegido, partido["cupo_max"])
+                    if estado == "confirmado":
+                        st.toast(f"{elegido.split(' (')[0]} agregado y confirmado.", icon="✅")
+                    else:
+                        st.toast(f"Cupo lleno: {elegido.split(' (')[0]} quedó en lista de espera.", icon="⏳")
+                    st.rerun()
         else:
             st.caption("Ya están todos los jugadores registrados en esta lista.")
 
@@ -151,15 +207,32 @@ def _vista_admin(partido):
             st.caption("Todavía nadie se ha inscrito.")
         for i in inscritos:
             nombre_mostrar = i["apodo"] or i["nombre"]
-            cols = st.columns([2, 1, 1, 1])
+            cols = st.columns([2, 1, 1.3, 1.3])
             cols[0].write(f"{estilos.emoji_posicion(i.get('posicion'))} **{nombre_mostrar}** ({i['telefono']})")
             cols[1].markdown(estilos.badge_inscripcion(i["estado"]), unsafe_allow_html=True)
             cols[2].markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
-            if partido["estado"] == "jugado":
-                asistio_actual = i["asistio"]
-                etiqueta = "✅ Llegó" if asistio_actual else ("❌ No llegó" if asistio_actual == 0 else "Marcar")
-                if cols[3].button(etiqueta, key=f"asistio_{i['id']}"):
-                    inscripciones.marcar_asistencia(i["id"], not asistio_actual)
+
+            if i["estado"] == "confirmado" and i["estado_pago"] != "verificado":
+                if cols[3].button("💵 Efectivo", key=f"efectivo_{i['id']}"):
+                    pagos.marcar_pago_manual(i["id"], partido["costo_por_jugador"], usuario["id"])
+                    st.toast(f"Pago en efectivo registrado para {nombre_mostrar}.", icon="💵")
+                    st.rerun()
+            elif partido["estado"] == "jugado" and i["estado"] == "confirmado":
+                seleccion_actual = MAPA_ASISTENCIA_INVERSO.get(i["asistio"], "Sin marcar")
+                nueva = cols[3].selectbox(
+                    "Asistencia", ETIQUETAS_ASISTENCIA, index=ETIQUETAS_ASISTENCIA.index(seleccion_actual),
+                    key=f"asis_{i['id']}", label_visibility="collapsed",
+                )
+                nuevo_estado = MAPA_ASISTENCIA[nueva]
+                if nuevo_estado != i["asistio"]:
+                    inscripciones.marcar_asistencia(i["id"], nuevo_estado)
+                    config = club_config.obtener_config()
+                    multas.eliminar_multa_de_inscripcion(i["jugador_id"], partido["id"], "tardanza")
+                    multas.eliminar_multa_de_inscripcion(i["jugador_id"], partido["id"], "no_asistio")
+                    if nuevo_estado == "tardanza":
+                        multas.crear_multa(i["jugador_id"], partido["id"], "tardanza", config["monto_multa_tardanza"])
+                    elif nuevo_estado == "no_llego":
+                        multas.crear_multa(i["jugador_id"], partido["id"], "no_asistio", config["monto_multa_no_asistio"])
                     st.rerun()
 
         recaudo = pagos.cuadre_partido(partido["id"])
@@ -168,6 +241,49 @@ def _vista_admin(partido):
         c1.metric("Recaudado (verificado)", f"S/ {recaudo['recaudado']:.2f}")
         c2.metric("Costo cancha", f"S/ {partido['costo_cancha']:.2f}")
         c3.metric("Saldo", f"S/ {recaudo['recaudado'] - partido['costo_cancha']:.2f}")
+
+    if partido["estado"] == "jugado":
+        with st.expander("📊 Reporte del partido"):
+            marcados = sum(1 for i in confirmados_lista if i["asistio"])
+            col_r1, col_r2 = st.columns(2)
+            col_r1.metric("Asistencia marcada", f"{marcados}/{len(confirmados_lista)}")
+            multas_partido = multas.listar_multas_partido(partido["id"])
+            col_r2.metric("Multas generadas", len(multas_partido))
+
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "Jugador": i["apodo"] or i["nombre"],
+                            "Pago": i["estado_pago"].replace("_", " ").capitalize(),
+                            "Asistencia": {
+                                "llego": "✅ Llegó", "tardanza": "⏰ Tardanza", "no_llego": "❌ No llegó",
+                            }.get(i["asistio"], "Sin marcar"),
+                        }
+                        for i in confirmados_lista
+                    ]
+                ),
+                hide_index=True,
+                use_container_width=True,
+            )
+
+            if multas_partido:
+                st.markdown("##### Multas de este partido")
+                st.dataframe(
+                    pd.DataFrame(
+                        [
+                            {
+                                "Jugador": m["apodo"] or m["nombre"],
+                                "Tipo": "Tardanza" if m["tipo"] == "tardanza" else "No asistencia",
+                                "Monto": f"S/ {m['monto']:.2f}",
+                                "Estado": "Pagado" if m["estado"] == "pagado" else "Debe",
+                            }
+                            for m in multas_partido
+                        ]
+                    ),
+                    hide_index=True,
+                    use_container_width=True,
+                )
 
     if partido["estado"] == "cancelado":
         with st.expander("Repetir esta pichanga"):
