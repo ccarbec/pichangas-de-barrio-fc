@@ -120,6 +120,18 @@ CREATE TABLE IF NOT EXISTS multas (
     nota TEXT
 );
 
+-- Zonas/estadios donde se juega, con su precio de cancha y aporte por
+-- jugador de siempre — al programar una pichanga se elige uno y esos dos
+-- montos se rellenan solos (igual se pueden ajustar para ese día puntual).
+CREATE TABLE IF NOT EXISTS estadios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    costo_cancha REAL NOT NULL DEFAULT 0,
+    costo_por_jugador REAL NOT NULL DEFAULT 0,
+    estado TEXT NOT NULL DEFAULT 'activo',
+    fecha_creacion TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
 -- Historial de recordatorios de WhatsApp mandados por scripts/recordatorios_auto.py
 -- (corre como tarea programada en la PC del club, no en Streamlit Cloud).
 -- También sirve para no repetir el mismo tipo de envío al mismo jugador y

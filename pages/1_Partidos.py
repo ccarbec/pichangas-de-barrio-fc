@@ -5,7 +5,7 @@ import datetime
 import pandas as pd
 import streamlit as st
 
-from models import club_config, inscripciones, jugadores, multas, pagos, partidos
+from models import club_config, estadios, inscripciones, jugadores, multas, pagos, partidos
 from utils import auth, estilos
 
 auth.requerir_login()
@@ -32,15 +32,36 @@ def _nombre_completo(p):
 # ---------------------------------------------------------------- admin: crear
 if auth.es_admin():
     with st.expander("➕ Programar nueva pichanga"):
+        OTRO_ESTADIO = "✍️ Otro (escribir manualmente)"
+        opciones_estadio = {e["nombre"]: e for e in estadios.listar_estadios()}
+        nombre_seleccion = st.selectbox(
+            "Zona / estadio", list(opciones_estadio.keys()) + [OTRO_ESTADIO], key="estadio_nuevo_partido"
+        )
+        estadio_elegido = opciones_estadio.get(nombre_seleccion)
+        if not opciones_estadio:
+            st.caption("Todavía no tienes zonas/estadios guardados — puedes crearlos en Configuración.")
+
         with st.form("nuevo_partido", clear_on_submit=True):
             col1, col2 = st.columns(2)
             fecha = col1.date_input("Fecha", value=datetime.date.today())
             hora = col2.time_input("Hora", value=datetime.time(19, 0))
-            cancha = st.text_input("Cancha / lugar")
+            if estadio_elegido:
+                cancha = estadio_elegido["nombre"]
+                st.caption(f"Cancha: **{cancha}**")
+            else:
+                cancha = st.text_input("Cancha / lugar")
             col3, col4, col5 = st.columns(3)
             cupo_max = col3.number_input("Cupo máximo", min_value=2, max_value=40, value=14, step=1)
-            costo_cancha = col4.number_input("Costo de la cancha (S/)", min_value=0.0, value=120.0, step=5.0)
-            costo_por_jugador = col5.number_input("Costo por jugador (S/)", min_value=0.0, value=10.0, step=1.0)
+            costo_cancha = col4.number_input(
+                "Costo de la cancha (S/)", min_value=0.0,
+                value=float(estadio_elegido["costo_cancha"]) if estadio_elegido else 120.0, step=5.0,
+                key=f"costo_cancha_{nombre_seleccion}",
+            )
+            costo_por_jugador = col5.number_input(
+                "Costo por jugador (S/)", min_value=0.0,
+                value=float(estadio_elegido["costo_por_jugador"]) if estadio_elegido else 10.0, step=1.0,
+                key=f"costo_jugador_{nombre_seleccion}",
+            )
             notas = st.text_area("Notas (opcional)", height=68)
             crear = st.form_submit_button("Programar pichanga")
 

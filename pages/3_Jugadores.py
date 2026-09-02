@@ -1,9 +1,9 @@
-"""CRUD de jugadores/usuarios y configuración del club (Yape)."""
+"""CRUD de jugadores/usuarios."""
 
 import pandas as pd
 import streamlit as st
 
-from models import club_config, jugadores, usuarios
+from models import jugadores, usuarios
 from utils import auth, estilos
 
 auth.requerir_admin()
@@ -13,9 +13,7 @@ st.title("🧑‍🤝‍🧑 Jugadores")
 
 POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"]
 
-tab_lista, tab_nuevo, tab_config = st.tabs(
-    ["Lista de jugadores", "➕ Agregar jugador", "⚙️ Configuración (Yape)"]
-)
+tab_lista, tab_nuevo = st.tabs(["Lista de jugadores", "➕ Agregar jugador"])
 
 with tab_nuevo:
     st.caption("Normalmente cada jugador se crea su propia cuenta desde la pantalla de inicio. "
@@ -141,23 +139,3 @@ with tab_lista:
                     jugadores.eliminar_jugador(jugador["id"])
                     st.toast("Jugador eliminado.", icon="🗑️")
                     st.rerun()
-
-with tab_config:
-    st.caption("El Yape se muestra a los jugadores en la pantalla de pago. Los montos de multa se "
-               "usan cada vez que marcas tardanza o no-asistencia en Partidos.")
-    config = club_config.obtener_config()
-    with st.form("config_club"):
-        nombre_yape = st.text_input("Nombre en Yape", value=config["nombre_yape"] or "")
-        telefono_yape = st.text_input("Celular Yape", value=config["telefono_yape"] or "")
-        col_t, col_n = st.columns(2)
-        monto_tardanza = col_t.number_input(
-            "Multa por tardanza (S/)", min_value=0.0, value=float(config["monto_multa_tardanza"]), step=1.0
-        )
-        monto_no_asistio = col_n.number_input(
-            "Multa por no asistir (S/)", min_value=0.0, value=float(config["monto_multa_no_asistio"]), step=1.0
-        )
-        guardar_config = st.form_submit_button("Guardar")
-    if guardar_config:
-        club_config.guardar_config(nombre_yape, telefono_yape, monto_tardanza, monto_no_asistio)
-        st.toast("Configuración guardada.", icon="✅")
-        st.rerun()
