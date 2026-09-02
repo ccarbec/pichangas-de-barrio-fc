@@ -1,11 +1,10 @@
 """Envío manual de WhatsApp con mensajes personalizados — se manda cuando
-tú aprietes el botón, sin depender de horas ni reglas automáticas (eso
-vive en Recordatorios).
+tú aprietes el botón, sin depender de horas ni reglas automáticas.
 
-Marcas a quién mandarle viendo su estado de pago al costado (el estado en
-sí se verifica en la página Pagos — acá solo se muestra para decidir a
-quién escribirle), y decides si mandas a uno solo o a todos los marcados
-de una vez.
+Eliges si es recordatorio del partido o de pago pendiente, marcas a quién
+mandarle viendo su estado de pago al costado (el estado en sí se verifica
+en la página Pagos — acá solo se muestra para decidir a quién escribirle),
+y decides si mandas a uno solo o a todos los marcados de una vez.
 
 Corre SOLO localmente: necesita WhatsApp vinculado en esta PC
 (scripts/vincular_whatsapp.py). Desde el link público de la app no se
@@ -60,7 +59,6 @@ PLANTILLAS_PAGO = {
     ),
 }
 PLANTILLA_LIBRE = "✍️ Mensaje libre (en blanco)"
-PLANTILLAS = {**PLANTILLAS_PARTIDO, **PLANTILLAS_PAGO, PLANTILLA_LIBRE: ""}
 
 
 def _armar(jugador, partido, texto_plantilla):
@@ -109,25 +107,42 @@ opciones_partido = {f"{p['fecha']} {p['hora']} — {p['cancha']}": p for p in li
 seleccion_partido = st.selectbox("Pichanga", list(opciones_partido.keys()))
 partido = opciones_partido[seleccion_partido]
 
-confirmados = [
+todos_confirmados = [
     i for i in inscripciones.listar_inscripciones_partido(partido["id"]) if i["estado"] == "confirmado"
 ]
 
-if not confirmados:
+if not todos_confirmados:
     st.info("Todavía nadie ha confirmado para esta pichanga.")
     st.stop()
 
-pagados = sum(1 for i in confirmados if i["estado_pago"] == "verificado")
+pagados = sum(1 for i in todos_confirmados if i["estado_pago"] == "verificado")
 col1, col2 = st.columns(2)
-col1.metric("Confirmados", len(confirmados))
-col2.metric("Con pago verificado", f"{pagados}/{len(confirmados)}")
+col1.metric("Confirmados", len(todos_confirmados))
+col2.metric("Con pago verificado", f"{pagados}/{len(todos_confirmados)}")
 
-nombre_plantilla = st.selectbox("Estilo de mensaje", list(PLANTILLAS.keys()))
+tipo_mensaje = st.radio(
+    "¿Qué quieres mandar?",
+    ["📅 Recordatorio de partido", "💸 Pendiente de pago"],
+    horizontal=True,
+)
+
+if tipo_mensaje == "💸 Pendiente de pago":
+    confirmados = [i for i in todos_confirmados if i["estado_pago"] != "verificado"]
+    plantillas = {**PLANTILLAS_PAGO, PLANTILLA_LIBRE: ""}
+else:
+    confirmados = todos_confirmados
+    plantillas = {**PLANTILLAS_PARTIDO, PLANTILLA_LIBRE: ""}
+
+if not confirmados:
+    st.info("No hay nadie en esta lista (¿ya todos pagaron?).")
+    st.stop()
+
+nombre_plantilla = st.selectbox("Estilo de mensaje", list(plantillas.keys()))
 texto_plantilla = st.text_area(
     "Mensaje (puedes editarlo)",
-    value=PLANTILLAS[nombre_plantilla],
+    value=plantillas[nombre_plantilla],
     height=100,
-    key=f"texto_{partido['id']}_{nombre_plantilla}",
+    key=f"texto_{partido['id']}_{tipo_mensaje}_{nombre_plantilla}",
 )
 st.caption("Variables: {nombre}, {fecha}, {hora}, {cancha}, {costo}, {saludo}")
 
@@ -135,21 +150,20 @@ st.markdown("##### ¿A quién le mandas?")
 col_todos, col_ninguno = st.columns(2)
 if col_todos.button("☑️ Marcar todos"):
     for i in confirmados:
-        st.session_state[f"chk_{i['id']}"] = True
+        st.session_state[f"chk_{tipo_mensaje}_{i['id']}"] = True
     st.rerun()
 if col_ninguno.button("⬜ Desmarcar todos"):
     for i in confirmados:
-        st.session_state[f"chk_{i['id']}"] = False
+        st.session_state[f"chk_{tipo_mensaje}_{i['id']}"] = False
     st.rerun()
 
 seleccionados = []
 for i in confirmados:
-    clave_check = f"chk_{i['id']}"
-    marcado_por_defecto = i["estado_pago"] != "verificado"
+    clave_check = f"chk_{tipo_mensaje}_{i['id']}"
     col_check, col_nombre, col_pago, col_uno = st.columns([0.6, 2.4, 1.3, 1])
 
     marcado = col_check.checkbox(
-        "Enviar", key=clave_check, value=st.session_state.get(clave_check, marcado_por_defecto), label_visibility="collapsed"
+        "Enviar", key=clave_check, value=st.session_state.get(clave_check, True), label_visibility="collapsed"
     )
     col_nombre.write(f"{estilos.emoji_posicion(i.get('posicion'))} **{i['apodo'] or i['nombre']}**")
     col_pago.markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)

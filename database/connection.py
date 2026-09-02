@@ -43,7 +43,10 @@ CREATE TABLE IF NOT EXISTS jugadores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario_id INTEGER NOT NULL UNIQUE REFERENCES usuarios(id),
     apodo TEXT,
+    apellidos TEXT DEFAULT '',
     posicion TEXT,
+    equipo_hincha TEXT DEFAULT '',
+    camiseta TEXT DEFAULT '',
     estado TEXT NOT NULL DEFAULT 'activo',
     fecha_registro TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
@@ -110,6 +113,15 @@ CREATE TABLE IF NOT EXISTS envios_recordatorios (
     fecha_hora TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 """
+
+# ALTER TABLE para bases que ya existían antes de sumar estas columnas a
+# jugadores — CREATE TABLE IF NOT EXISTS no las agrega solo. Cada una se
+# intenta por separado y se ignora el error si la columna ya está.
+MIGRACIONES = [
+    "ALTER TABLE jugadores ADD COLUMN apellidos TEXT DEFAULT ''",
+    "ALTER TABLE jugadores ADD COLUMN equipo_hincha TEXT DEFAULT ''",
+    "ALTER TABLE jugadores ADD COLUMN camiseta TEXT DEFAULT ''",
+]
 
 
 def _credenciales_turso():
@@ -202,10 +214,16 @@ def get_connection():
 
 
 def init_db():
-    """Crea las tablas si todavía no existen. Seguro de llamar muchas veces."""
+    """Crea las tablas si todavía no existen, y agrega columnas nuevas a
+    tablas viejas si hace falta. Seguro de llamar muchas veces."""
     conexion = get_connection()
     try:
         conexion.executescript(SCHEMA)
+        for migracion in MIGRACIONES:
+            try:
+                conexion.execute(migracion)
+            except Exception:
+                pass
         conexion.commit()
     finally:
         conexion.close()

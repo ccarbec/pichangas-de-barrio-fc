@@ -86,12 +86,11 @@ st.title("⚽ Pichangas de Barrio FC")
 if auth.es_admin():
     st.caption("Programa partidos, verifica pagos y controla a los jugadores del club.")
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4 = st.columns(4)
     col1.page_link("pages/1_Partidos.py", label="Partidos", icon="📅")
     col2.page_link("pages/2_Pagos.py", label="Pagos", icon="💸")
     col3.page_link("pages/3_Jugadores.py", label="Jugadores", icon="🧑‍🤝‍🧑")
-    col4.page_link("pages/4_Recordatorios.py", label="Recordatorios", icon="📣")
-    col5.page_link("pages/5_Enviar_WhatsApp.py", label="Enviar WhatsApp", icon="📨")
+    col4.page_link("pages/4_Enviar_WhatsApp.py", label="Enviar WhatsApp", icon="📨")
 
     st.divider()
 

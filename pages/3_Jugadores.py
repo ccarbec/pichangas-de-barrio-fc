@@ -11,6 +11,8 @@ estilos.aplicar_tema()
 
 st.title("🧑‍🤝‍🧑 Jugadores")
 
+POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"]
+
 tab_lista, tab_nuevo, tab_config = st.tabs(
     ["Lista de jugadores", "➕ Agregar jugador", "⚙️ Configuración (Yape)"]
 )
@@ -19,21 +21,28 @@ with tab_nuevo:
     st.caption("Normalmente cada jugador se crea su propia cuenta desde la pantalla de inicio. "
                "Usa esto solo si tú quieres darlo de alta manualmente.")
     with st.form("nuevo_jugador", clear_on_submit=True):
-        nombre = st.text_input("Nombre completo")
+        col_n, col_a = st.columns(2)
+        nombres = col_n.text_input("Nombres")
+        apellidos = col_a.text_input("Apellidos")
         apodo = st.text_input("Apodo")
         telefono = st.text_input("Celular")
-        posicion = st.selectbox("Posición", ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"])
+        posicion = st.selectbox("Posición", POSICIONES)
+        col_h, col_c = st.columns(2)
+        equipo_hincha = col_h.text_input("Hincha de qué equipo")
+        camiseta = col_c.text_input("Camiseta que usa")
         password = st.text_input("Contraseña inicial", type="password")
         crear = st.form_submit_button("Guardar jugador")
 
     if crear:
-        if not nombre.strip() or not telefono.strip() or not password:
-            st.error("Nombre, celular y contraseña son obligatorios.")
+        if not nombres.strip() or not telefono.strip() or not password:
+            st.error("Nombres, celular y contraseña son obligatorios.")
         elif usuarios.obtener_usuario_por_telefono(telefono):
             st.error("Ya existe una cuenta con ese celular.")
         else:
-            jugadores.registrar_jugador(nombre, telefono, password, apodo, posicion)
-            st.toast(f"Jugador '{nombre}' agregado.", icon="✅")
+            jugadores.registrar_jugador(
+                nombres, telefono, password, apodo, posicion, apellidos, equipo_hincha, camiseta
+            )
+            st.toast(f"Jugador '{nombres}' agregado.", icon="✅")
             st.rerun()
 
 with tab_lista:
@@ -47,10 +56,13 @@ with tab_lista:
             pd.DataFrame(
                 [
                     {
-                        "Nombre": j["nombre"],
+                        "Nombres": j["nombre"],
+                        "Apellidos": j.get("apellidos") or "",
                         "Apodo": j["apodo"] or "",
                         "Celular": j["telefono"],
                         "Posición": f"{estilos.emoji_posicion(j['posicion'])} {j['posicion'] or ''}".strip(),
+                        "Hincha de": j.get("equipo_hincha") or "",
+                        "Camiseta": j.get("camiseta") or "",
                         "Estado": j["estado"].capitalize(),
                     }
                     for j in lista
@@ -67,14 +79,17 @@ with tab_lista:
         usuario_jugador = usuarios.obtener_usuario(jugador["usuario_id"])
 
         with st.form("editar_jugador"):
+            col_n, col_a = st.columns(2)
+            nombres_editado = col_n.text_input("Nombres", value=usuario_jugador["nombre"])
+            apellidos_editado = col_a.text_input("Apellidos", value=jugador.get("apellidos") or "")
             apodo_editado = st.text_input("Apodo", value=jugador["apodo"] or "")
             posicion_editada = st.selectbox(
-                "Posición",
-                ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"],
-                index=["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"].index(jugador["posicion"])
-                if jugador["posicion"] in ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"]
-                else 4,
+                "Posición", POSICIONES,
+                index=POSICIONES.index(jugador["posicion"]) if jugador["posicion"] in POSICIONES else 4,
             )
+            col_h, col_c = st.columns(2)
+            equipo_hincha_editado = col_h.text_input("Hincha de qué equipo", value=jugador.get("equipo_hincha") or "")
+            camiseta_editada = col_c.text_input("Camiseta que usa", value=jugador.get("camiseta") or "")
             rol_editado = st.selectbox(
                 "Rol", ["jugador", "admin"], index=["jugador", "admin"].index(usuario_jugador["rol"])
             )
@@ -88,7 +103,11 @@ with tab_lista:
                 cambiar_estado = col_estado.form_submit_button("♻️ Reactivar")
 
         if guardar:
-            jugadores.actualizar_jugador(jugador["id"], apodo_editado, posicion_editada)
+            jugadores.actualizar_jugador(
+                jugador["id"], apodo_editado, posicion_editada, apellidos_editado, equipo_hincha_editado, camiseta_editada
+            )
+            if nombres_editado.strip() and nombres_editado != usuario_jugador["nombre"]:
+                usuarios.actualizar_nombre(usuario_jugador["id"], nombres_editado)
             if rol_editado != usuario_jugador["rol"]:
                 usuarios.cambiar_rol(usuario_jugador["id"], rol_editado)
             if nueva_password:
@@ -104,6 +123,24 @@ with tab_lista:
                 jugadores.reactivar_jugador(jugador["id"])
                 st.toast("Jugador reactivado.", icon="♻️")
             st.rerun()
+
+        with st.expander("🗑️ Zona de eliminación permanente"):
+            if jugadores.tiene_inscripciones(jugador["id"]):
+                st.caption(
+                    "Este jugador ya tiene partidos registrados (historial de asistencia/pagos), así que no "
+                    "se puede eliminar del todo — usa 'Inactivar' arriba para que deje de aparecer sin perder "
+                    "ese historial."
+                )
+            else:
+                st.warning("Esto borra al jugador y su cuenta para siempre. No se puede deshacer.")
+                confirmar = st.checkbox(
+                    f"Confirmo que quiero eliminar a {jugador['apodo'] or usuario_jugador['nombre']} permanentemente",
+                    key=f"confirmar_eliminar_{jugador['id']}",
+                )
+                if st.button("🗑️ Eliminar definitivamente", disabled=not confirmar):
+                    jugadores.eliminar_jugador(jugador["id"])
+                    st.toast("Jugador eliminado.", icon="🗑️")
+                    st.rerun()
 
 with tab_config:
     st.caption("Estos datos se muestran a los jugadores en la pantalla de pago.")

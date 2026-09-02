@@ -79,6 +79,15 @@ def listar_usuarios(solo_activos=False):
         conexion.close()
 
 
+def actualizar_nombre(usuario_id, nombre):
+    conexion = get_connection()
+    try:
+        conexion.execute("UPDATE usuarios SET nombre = ? WHERE id = ?", (nombre.strip(), usuario_id))
+        conexion.commit()
+    finally:
+        conexion.close()
+
+
 def cambiar_rol(usuario_id, rol):
     if rol not in ROLES_VALIDOS:
         raise ValueError(f"Rol inválido: {rol}")
