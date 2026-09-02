@@ -2,6 +2,11 @@
 tú aprietes el botón, sin depender de horas ni reglas automáticas (eso
 vive en Recordatorios).
 
+Marcas a quién mandarle viendo su estado de pago al costado (el estado en
+sí se verifica en la página Pagos — acá solo se muestra para decidir a
+quién escribirle), y decides si mandas a uno solo o a todos los marcados
+de una vez.
+
 Corre SOLO localmente: necesita WhatsApp vinculado en esta PC
 (scripts/vincular_whatsapp.py). Desde el link público de la app no se
 puede enviar — restricción de WhatsApp, no de la app."""
@@ -55,6 +60,45 @@ PLANTILLAS_PAGO = {
     ),
 }
 PLANTILLA_LIBRE = "✍️ Mensaje libre (en blanco)"
+PLANTILLAS = {**PLANTILLAS_PARTIDO, **PLANTILLAS_PAGO, PLANTILLA_LIBRE: ""}
+
+
+def _armar(jugador, partido, texto_plantilla):
+    return whatsapp_client.armar_mensaje(
+        texto_plantilla, {"nombre": jugador["nombre"], "apodo": jugador["apodo"], "telefono": jugador["telefono"]}, partido
+    )
+
+
+def _enviar_y_registrar(destinatarios, partido):
+    """destinatarios: lista de dicts con 'telefono'/'texto'/'jugador_nombre'."""
+    estado_placeholder = st.empty()
+    barra = st.progress(0.0)
+
+    def _mostrar_progreso(indice, total, destinatario, resultado):
+        icono = "✅ enviado" if resultado["resultado"] == "enviado" else "❌ falló"
+        estado_placeholder.write(f"({indice}/{total}) {destinatario['jugador_nombre']}: {icono}")
+        barra.progress(indice / total)
+
+    with st.spinner("Se está abriendo Chrome y mandando — no lo cierres mientras tanto..."):
+        try:
+            resultados = whatsapp_client.enviar_multiples(destinatarios, callback_progreso=_mostrar_progreso)
+        except Exception as error:
+            st.error(f"No se pudo completar el envío: {error}")
+            return
+
+    for r in resultados:
+        envios_recordatorios.registrar_envio(
+            r["jugador_nombre"], r["telefono"], partido["fecha"], partido["hora"],
+            "manual", r["texto"], r["resultado"], r.get("error"),
+        )
+
+    enviados = sum(1 for r in resultados if r["resultado"] == "enviado")
+    fallidos = sum(1 for r in resultados if r["resultado"] == "fallo")
+    if fallidos:
+        st.warning(f"Listo: {enviados} enviado(s), {fallidos} fallaron.")
+    else:
+        st.success(f"Listo: {enviados} mensaje(s) enviado(s) correctamente.")
+
 
 lista_partidos = partidos.listar_partidos(estado="programado")
 if not lista_partidos:
@@ -69,88 +113,74 @@ confirmados = [
     i for i in inscripciones.listar_inscripciones_partido(partido["id"]) if i["estado"] == "confirmado"
 ]
 
-publico = st.radio(
-    "¿A quién?",
-    ["Todos los confirmados", "Solo pendientes de pago", "Elegir jugadores puntuales"],
-    horizontal=True,
-)
-
-if publico == "Solo pendientes de pago":
-    candidatos = [i for i in confirmados if i["estado_pago"] != "verificado"]
-    plantillas = {**PLANTILLAS_PAGO, **PLANTILLAS_PARTIDO, PLANTILLA_LIBRE: ""}
-else:
-    candidatos = confirmados
-    plantillas = {**PLANTILLAS_PARTIDO, **PLANTILLAS_PAGO, PLANTILLA_LIBRE: ""}
-
-if not candidatos:
-    st.info("No hay nadie en esta lista para esta pichanga.")
+if not confirmados:
+    st.info("Todavía nadie ha confirmado para esta pichanga.")
     st.stop()
 
-if publico == "Elegir jugadores puntuales":
-    opciones_jugador = {f"{i['apodo'] or i['nombre']} ({i['telefono']})": i for i in candidatos}
-    seleccionados = st.multiselect("Jugadores", list(opciones_jugador.keys()))
-    destinatarios_base = [opciones_jugador[etiqueta] for etiqueta in seleccionados]
-else:
-    destinatarios_base = candidatos
-    st.caption(f"Se manda a los {len(candidatos)} jugador(es) de esta lista.")
+pagados = sum(1 for i in confirmados if i["estado_pago"] == "verificado")
+col1, col2 = st.columns(2)
+col1.metric("Confirmados", len(confirmados))
+col2.metric("Con pago verificado", f"{pagados}/{len(confirmados)}")
 
-nombre_plantilla = st.selectbox("Estilo de mensaje", list(plantillas.keys()))
+nombre_plantilla = st.selectbox("Estilo de mensaje", list(PLANTILLAS.keys()))
 texto_plantilla = st.text_area(
     "Mensaje (puedes editarlo)",
-    value=plantillas[nombre_plantilla],
+    value=PLANTILLAS[nombre_plantilla],
     height=100,
-    key=f"texto_{publico}_{nombre_plantilla}",
+    key=f"texto_{partido['id']}_{nombre_plantilla}",
 )
 st.caption("Variables: {nombre}, {fecha}, {hora}, {cancha}, {costo}, {saludo}")
 
-if not destinatarios_base:
-    st.caption("Elige al menos un jugador para ver la vista previa y poder enviar.")
-    st.stop()
+st.markdown("##### ¿A quién le mandas?")
+col_todos, col_ninguno = st.columns(2)
+if col_todos.button("☑️ Marcar todos"):
+    for i in confirmados:
+        st.session_state[f"chk_{i['id']}"] = True
+    st.rerun()
+if col_ninguno.button("⬜ Desmarcar todos"):
+    for i in confirmados:
+        st.session_state[f"chk_{i['id']}"] = False
+    st.rerun()
 
-st.markdown(f"##### Vista previa — {len(destinatarios_base)} jugador(es)")
-for i in destinatarios_base:
-    jugador = {"nombre": i["nombre"], "apodo": i["apodo"], "telefono": i["telefono"]}
-    texto_final = whatsapp_client.armar_mensaje(texto_plantilla, jugador, partido)
-    with st.expander(f"{estilos.emoji_posicion(i.get('posicion'))} {i['apodo'] or i['nombre']}"):
-        st.write(texto_final)
+seleccionados = []
+for i in confirmados:
+    clave_check = f"chk_{i['id']}"
+    marcado_por_defecto = i["estado_pago"] != "verificado"
+    col_check, col_nombre, col_pago, col_uno = st.columns([0.6, 2.4, 1.3, 1])
 
-if st.button(f"📨 Enviar a {len(destinatarios_base)} jugador(es)", type="primary"):
-    destinatarios = [
-        {
+    marcado = col_check.checkbox(
+        "Enviar", key=clave_check, value=st.session_state.get(clave_check, marcado_por_defecto), label_visibility="collapsed"
+    )
+    col_nombre.write(f"{estilos.emoji_posicion(i.get('posicion'))} **{i['apodo'] or i['nombre']}**")
+    col_pago.markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
+
+    if col_uno.button("📨 Uno", key=f"uno_{i['id']}"):
+        destinatario = {
             "telefono": i["telefono"],
-            "texto": whatsapp_client.armar_mensaje(
-                texto_plantilla, {"nombre": i["nombre"], "apodo": i["apodo"], "telefono": i["telefono"]}, partido
-            ),
+            "texto": _armar(i, partido, texto_plantilla),
             "jugador_nombre": i["apodo"] or i["nombre"],
         }
-        for i in destinatarios_base
-    ]
+        _enviar_y_registrar([destinatario], partido)
 
-    estado_placeholder = st.empty()
-    barra = st.progress(0.0)
+    if marcado:
+        seleccionados.append(i)
 
-    def _mostrar_progreso(indice, total, destinatario, resultado):
-        icono = "✅ enviado" if resultado["resultado"] == "enviado" else "❌ falló"
-        estado_placeholder.write(f"({indice}/{total}) {destinatario['jugador_nombre']}: {icono}")
-        barra.progress(indice / total)
+st.divider()
 
-    with st.spinner("Se está abriendo Chrome y mandando los mensajes — no lo cierres mientras tanto..."):
-        try:
-            resultados = whatsapp_client.enviar_multiples(destinatarios, callback_progreso=_mostrar_progreso)
-        except Exception as error:
-            st.error(f"No se pudo completar el envío: {error}")
-            resultados = []
+if not seleccionados:
+    st.caption("Marca al menos un jugador para poder mandar a todos juntos.")
+else:
+    with st.expander(f"Vista previa — {len(seleccionados)} jugador(es) marcado(s)"):
+        for i in seleccionados:
+            st.write(f"**{i['apodo'] or i['nombre']}**: {_armar(i, partido, texto_plantilla)}")
 
-    for r in resultados:
-        envios_recordatorios.registrar_envio(
-            r["jugador_nombre"], r["telefono"], partido["fecha"], partido["hora"],
-            "manual", r["texto"], r["resultado"], r.get("error"),
-        )
-
-    if resultados:
-        enviados = sum(1 for r in resultados if r["resultado"] == "enviado")
-        fallidos = sum(1 for r in resultados if r["resultado"] == "fallo")
-        if fallidos:
-            st.warning(f"Listo: {enviados} enviado(s), {fallidos} fallaron.")
-        else:
-            st.success(f"Listo: {enviados} mensaje(s) enviado(s) correctamente.")
+    if st.button(f"📨 Enviar a los {len(seleccionados)} marcados", type="primary"):
+        destinatarios = [
+            {
+                "telefono": i["telefono"],
+                "texto": _armar(i, partido, texto_plantilla),
+                "jugador_nombre": i["apodo"] or i["nombre"],
+            }
+            for i in seleccionados
+        ]
+        _enviar_y_registrar(destinatarios, partido)
