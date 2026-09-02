@@ -92,6 +92,23 @@ CREATE TABLE IF NOT EXISTS club_config (
     nombre_yape TEXT,
     telefono_yape TEXT
 );
+
+-- Historial de recordatorios de WhatsApp mandados por scripts/recordatorios_auto.py
+-- (corre como tarea programada en la PC del club, no en Streamlit Cloud).
+-- También sirve para no repetir el mismo tipo de envío al mismo jugador y
+-- partido cuando el script corre de nuevo la próxima hora.
+CREATE TABLE IF NOT EXISTS envios_recordatorios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    jugador_nombre TEXT NOT NULL,
+    telefono TEXT NOT NULL,
+    partido_fecha TEXT NOT NULL,
+    partido_hora TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    mensaje TEXT NOT NULL,
+    resultado TEXT NOT NULL,
+    detalle_error TEXT,
+    fecha_hora TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
 """
 
 

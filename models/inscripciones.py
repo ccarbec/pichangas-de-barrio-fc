@@ -69,17 +69,19 @@ def inscribir_jugador(partido_id, jugador_id, cupo_max):
 
 def cancelar_inscripcion(inscripcion_id):
     """Cancela la inscripción y, si tenía cupo confirmado, sube al primero
-    de la lista de espera."""
+    de la lista de espera. Devuelve el dict (nombre/apodo/telefono) del
+    jugador recién promovido, o None si no había nadie esperando."""
     inscripcion = obtener_inscripcion_por_id(inscripcion_id)
     conexion = get_connection()
     try:
         conexion.execute(
             "UPDATE inscripciones SET estado = 'cancelado' WHERE id = ?", (inscripcion_id,)
         )
+        promovido = None
         if inscripcion["estado"] == "confirmado":
             siguiente = conexion.execute(
                 """
-                SELECT id FROM inscripciones
+                SELECT id, jugador_id FROM inscripciones
                 WHERE partido_id = ? AND estado = 'lista_espera'
                 ORDER BY fecha_inscripcion LIMIT 1
                 """,
@@ -90,7 +92,17 @@ def cancelar_inscripcion(inscripcion_id):
                     "UPDATE inscripciones SET estado = 'confirmado' WHERE id = ?",
                     (siguiente["id"],),
                 )
+                fila = conexion.execute(
+                    """
+                    SELECT usuarios.nombre, usuarios.telefono, jugadores.apodo
+                    FROM jugadores JOIN usuarios ON usuarios.id = jugadores.usuario_id
+                    WHERE jugadores.id = ?
+                    """,
+                    (siguiente["jugador_id"],),
+                ).fetchone()
+                promovido = dict(fila) if fila else None
         conexion.commit()
+        return promovido
     finally:
         conexion.close()
 

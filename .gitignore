@@ -4,3 +4,5 @@ __pycache__/
 data/*.db
 data/backups/*.db
 .streamlit/secrets.toml
+whatsapp/perfil_chrome/
+logs/*.log
