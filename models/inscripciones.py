@@ -130,7 +130,7 @@ def listar_inscripciones_partido(partido_id):
             WHERE inscripciones.partido_id = ? AND inscripciones.estado != 'cancelado'
             ORDER BY
                 CASE inscripciones.estado WHEN 'confirmado' THEN 0 ELSE 1 END,
-                usuarios.nombre, jugadores.apellidos
+                jugadores.apellidos, usuarios.nombre
             """,
             (partido_id,),
         ).fetchall()
