@@ -138,6 +138,34 @@ def listar_inscripciones_partido(partido_id):
         conexion.close()
 
 
+def reemplazar(inscripcion_no_llego_id, jugador_reemplazo_id):
+    """Confirma a jugador_reemplazo_id en el mismo partido que
+    inscripcion_no_llego_id — sin tocar la inscripción original (se queda
+    con su marca de no-asistencia para el reporte y la multa) ni contar
+    contra el cupo, porque es un reemplazo puntual del día del partido, no
+    una inscripción nueva de cero."""
+    original = obtener_inscripcion_por_id(inscripcion_no_llego_id)
+    conexion = get_connection()
+    try:
+        existente = conexion.execute(
+            "SELECT id FROM inscripciones WHERE partido_id = ? AND jugador_id = ?",
+            (original["partido_id"], jugador_reemplazo_id),
+        ).fetchone()
+        if existente:
+            conexion.execute(
+                "UPDATE inscripciones SET estado = 'confirmado', asistio = NULL WHERE id = ?",
+                (existente["id"],),
+            )
+        else:
+            conexion.execute(
+                "INSERT INTO inscripciones (partido_id, jugador_id, estado) VALUES (?, ?, 'confirmado')",
+                (original["partido_id"], jugador_reemplazo_id),
+            )
+        conexion.commit()
+    finally:
+        conexion.close()
+
+
 def marcar_asistencia(inscripcion_id, estado):
     """estado: 'llego' / 'tardanza' / 'no_llego' (o None para "sin marcar").
     Tardanza y no_llego generan multa aparte — ver pages/1_Partidos.py."""

@@ -164,7 +164,11 @@ def _vista_admin(partido):
         )
 
     if partido["estado"] == "programado":
-        faltan_pago = sum(1 for i in confirmados_lista if i["estado_pago"] != "verificado")
+        # Un "no llegó" no bloquea el cierre — ya se le generó su multa por
+        # no asistir, así que su pago de inscripción deja de ser requisito.
+        faltan_pago = sum(
+            1 for i in confirmados_lista if i["estado_pago"] != "verificado" and i["asistio"] != "no_llego"
+        )
         autorizar_cierre = True
         if faltan_pago:
             st.warning(f"⚠️ Faltan {faltan_pago} jugador(es) por pagar.")
@@ -205,21 +209,29 @@ def _vista_admin(partido):
 
         if not inscritos:
             st.caption("Todavía nadie se ha inscrito.")
+
+        ids_en_partido = {x["jugador_id"] for x in inscritos}
+
         for i in inscritos:
             nombre_mostrar = i["apodo"] or i["nombre"]
-            cols = st.columns([2, 1, 1.3, 1.3])
-            cols[0].write(f"{estilos.emoji_posicion(i.get('posicion'))} **{nombre_mostrar}** ({i['telefono']})")
-            cols[1].markdown(estilos.badge_inscripcion(i["estado"]), unsafe_allow_html=True)
-            cols[2].markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
+            with st.container(border=True):
+                col_n, col_i, col_p = st.columns([2, 1, 1.3])
+                col_n.write(f"{estilos.emoji_posicion(i.get('posicion'))} **{nombre_mostrar}** ({i['telefono']})")
+                col_i.markdown(estilos.badge_inscripcion(i["estado"]), unsafe_allow_html=True)
+                col_p.markdown(estilos.badge_pago(i["estado_pago"]), unsafe_allow_html=True)
 
-            if i["estado"] == "confirmado" and i["estado_pago"] != "verificado":
-                if cols[3].button("💵 Efectivo", key=f"efectivo_{i['id']}"):
-                    pagos.marcar_pago_manual(i["id"], partido["costo_por_jugador"], usuario["id"])
-                    st.toast(f"Pago en efectivo registrado para {nombre_mostrar}.", icon="💵")
-                    st.rerun()
-            elif partido["estado"] == "jugado" and i["estado"] == "confirmado":
+                if i["estado"] != "confirmado" or partido["estado"] == "cancelado":
+                    continue
+
+                col_efectivo, col_asis = st.columns([1, 2])
+                if i["estado_pago"] != "verificado":
+                    if col_efectivo.button("💵 Pagó en efectivo", key=f"efectivo_{i['id']}"):
+                        pagos.marcar_pago_manual(i["id"], partido["costo_por_jugador"], usuario["id"])
+                        st.toast(f"Pago en efectivo registrado para {nombre_mostrar}.", icon="💵")
+                        st.rerun()
+
                 seleccion_actual = MAPA_ASISTENCIA_INVERSO.get(i["asistio"], "Sin marcar")
-                nueva = cols[3].selectbox(
+                nueva = col_asis.selectbox(
                     "Asistencia", ETIQUETAS_ASISTENCIA, index=ETIQUETAS_ASISTENCIA.index(seleccion_actual),
                     key=f"asis_{i['id']}", label_visibility="collapsed",
                 )
@@ -234,6 +246,28 @@ def _vista_admin(partido):
                     elif nuevo_estado == "no_llego":
                         multas.crear_multa(i["jugador_id"], partido["id"], "no_asistio", config["monto_multa_no_asistio"])
                     st.rerun()
+
+                if i["asistio"] == "no_llego":
+                    clave_mostrar = f"mostrar_reemplazo_{i['id']}"
+                    if not st.session_state.get(clave_mostrar):
+                        if st.button("🔁 Buscar reemplazo", key=f"btn_reemplazo_{i['id']}"):
+                            st.session_state[clave_mostrar] = True
+                            st.rerun()
+                    else:
+                        candidatos = [j for j in jugadores.listar_jugadores() if j["id"] not in ids_en_partido]
+                        if not candidatos:
+                            st.caption("No hay más jugadores registrados disponibles para reemplazar.")
+                        else:
+                            col_sel_r, col_btn_r = st.columns([3, 1])
+                            opciones_r = {f"{j['apodo'] or j['nombre']} ({j['telefono']})": j["id"] for j in candidatos}
+                            elegido_r = col_sel_r.selectbox(
+                                f"Reemplazo para {nombre_mostrar}", list(opciones_r.keys()), key=f"sel_reemplazo_{i['id']}"
+                            )
+                            if col_btn_r.button("Confirmar", key=f"confirmar_reemplazo_{i['id']}"):
+                                inscripciones.reemplazar(i["id"], opciones_r[elegido_r])
+                                st.toast(f"{elegido_r.split(' (')[0]} entra en lugar de {nombre_mostrar}.", icon="🔁")
+                                st.session_state[clave_mostrar] = False
+                                st.rerun()
 
         recaudo = pagos.cuadre_partido(partido["id"])
         st.divider()

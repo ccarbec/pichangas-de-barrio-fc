@@ -81,11 +81,11 @@ with tab_multas:
     if not todas_pendientes:
         st.success("No hay multas pendientes de pago.")
     for m in todas_pendientes:
-        col_nombre, col_tipo, col_monto, col_btn = st.columns([2, 1.3, 1, 1.3])
+        col_nombre, col_tipo, col_monto, col_check = st.columns([2, 1.3, 1, 1.3])
         col_nombre.write(f"**{m['apodo'] or m['nombre']}**")
         col_tipo.write("Tardanza" if m["tipo"] == "tardanza" else "No asistencia")
         col_monto.write(f"S/ {m['monto']:.2f}")
-        if col_btn.button("💵 Pagó en efectivo", key=f"efectivo_multa_{m['id']}"):
+        if col_check.checkbox("Pagó en efectivo", key=f"efectivo_multa_{m['id']}"):
             multas.marcar_pagado_manual(m["id"], usuario["id"])
             st.toast("Multa marcada como pagada (efectivo).", icon="💵")
             st.rerun()
