@@ -54,6 +54,7 @@ TIPOS_LEGIBLES = {
     "pago_pendiente": "Recordatorio de pago",
     "cupo_liberado": "Cupo liberado (no pagó)",
     "promovido": "Promovido de lista de espera",
+    "manual": "Manual (Enviar WhatsApp)",
 }
 
 recientes = envios_recordatorios.listar_envios_recientes(limite=100)
