@@ -77,8 +77,8 @@ if auth.es_admin():
                 st.rerun()
 
 # ---------------------------------------------------------------- jugador: mis multas
-if not auth.es_admin():
-    jugador_sesion = jugadores.obtener_jugador_por_usuario(usuario["id"])
+jugador_sesion = jugadores.obtener_jugador_por_usuario(usuario["id"])
+if jugador_sesion:
     mis_multas = multas.listar_multas_jugador(jugador_sesion["id"])
     if mis_multas:
         etiquetas_tipo = {"tardanza": "Tardanza", "no_asistio": "No asistencia"}
@@ -364,7 +364,7 @@ def _vista_admin(partido):
 
 
 # ---------------------------------------------------------------- render
-jugador_actual = None if auth.es_admin() else jugadores.obtener_jugador_por_usuario(usuario["id"])
+jugador_actual = jugadores.obtener_jugador_por_usuario(usuario["id"])
 
 with tab_programados:
     lista = partidos.listar_partidos(estado="programado")
@@ -374,6 +374,9 @@ with tab_programados:
         st.divider()
         if auth.es_admin():
             _vista_admin(partido)
+            if jugador_actual:
+                with st.expander("⚽ Mi asistencia a este partido"):
+                    _vista_jugador(partido, jugador_actual)
         else:
             _vista_jugador(partido, jugador_actual)
 

@@ -104,6 +104,15 @@ if auth.es_admin():
     col_b.metric("Pagos por verificar", len(pendientes))
     col_c.metric("Jugadores activos", len(activos))
 
+    jugador_propio = jugadores.obtener_jugador_por_usuario(usuario["id"])
+    st.divider()
+    if jugador_propio:
+        st.caption("También tienes tu propio perfil de jugador — puedes confirmar y jugar como cualquiera.")
+        st.page_link("pages/6_Mi_Perfil.py", label="Mi perfil →", icon="👤")
+    else:
+        st.caption("¿También juegas? Activa tu perfil de jugador para confirmar asistencia y aparecer en las pichangas.")
+        st.page_link("pages/6_Mi_Perfil.py", label="Activar mi perfil de jugador →", icon="🎽")
+
 else:
     st.caption("Confirma tu asistencia a la próxima pichanga y sube tu comprobante de pago.")
 

@@ -28,6 +28,23 @@ def registrar_jugador(nombre, telefono, password, apodo="", posicion="", apellid
     return usuario_id
 
 
+def crear_perfil_jugador(usuario_id, apodo="", posicion=""):
+    """Le agrega un perfil de jugador a un usuario que YA existe (típico
+    caso: el presidente/admin quiere también poder jugar y aparecer en las
+    pichangas) — a diferencia de registrar_jugador(), acá no se crea una
+    cuenta nueva, se usa la que ya tiene para entrar."""
+    conexion = get_connection()
+    try:
+        cursor = conexion.execute(
+            "INSERT INTO jugadores (usuario_id, apodo, posicion) VALUES (?, ?, ?)",
+            (usuario_id, apodo.strip(), posicion.strip()),
+        )
+        conexion.commit()
+        return cursor.lastrowid
+    finally:
+        conexion.close()
+
+
 def obtener_jugador_por_usuario(usuario_id):
     conexion = get_connection()
     try:

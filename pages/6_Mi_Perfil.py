@@ -14,11 +14,20 @@ jugador = jugadores.obtener_jugador_por_usuario(usuario["id"])
 
 st.title("👤 Mi Perfil")
 
-if not jugador:
-    st.info("Esta sección es para jugadores — como presidente no tienes un perfil de jugador propio.")
-    st.stop()
-
 POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"]
+
+if not jugador:
+    st.info("Todavía no tienes un perfil de jugador — actívalo para poder confirmar asistencia, "
+             "pagar y aparecer en las pichangas igual que los demás, sin dejar de ser presidente.")
+    with st.form("activar_perfil_jugador"):
+        apodo_nuevo = st.text_input("Apodo")
+        posicion_nueva = st.selectbox("Posición", POSICIONES)
+        activar = st.form_submit_button("🎽 Activar mi perfil de jugador", type="primary")
+    if activar:
+        jugadores.crear_perfil_jugador(usuario["id"], apodo_nuevo, posicion_nueva)
+        st.toast("¡Listo! Ya tienes tu perfil de jugador.", icon="🎽")
+        st.rerun()
+    st.stop()
 
 col_foto, col_datos = st.columns([1, 2])
 
