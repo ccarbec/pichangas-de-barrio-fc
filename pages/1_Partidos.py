@@ -128,6 +128,25 @@ def _vista_admin(partido):
 
     with st.expander("Ver inscritos"):
         inscritos = inscripciones.listar_inscripciones_partido(partido["id"])
+
+        ids_ya_inscritos = {i["jugador_id"] for i in inscritos}
+        disponibles = [j for j in jugadores.listar_jugadores() if j["id"] not in ids_ya_inscritos]
+        if disponibles:
+            col_sel, col_btn = st.columns([3, 1])
+            opciones = {f"{j['apodo'] or j['nombre']} ({j['telefono']})": j["id"] for j in disponibles}
+            elegido = col_sel.selectbox(
+                "➕ Agregar jugador registrado", list(opciones.keys()), key=f"agregar_{partido['id']}"
+            )
+            if col_btn.button("Agregar", key=f"btn_agregar_{partido['id']}"):
+                estado = inscripciones.inscribir_jugador(partido["id"], opciones[elegido], partido["cupo_max"])
+                if estado == "confirmado":
+                    st.toast(f"{elegido.split(' (')[0]} agregado y confirmado.", icon="✅")
+                else:
+                    st.toast(f"Cupo lleno: {elegido.split(' (')[0]} quedó en lista de espera.", icon="⏳")
+                st.rerun()
+        else:
+            st.caption("Ya están todos los jugadores registrados en esta lista.")
+
         if not inscritos:
             st.caption("Todavía nadie se ha inscrito.")
         for i in inscritos:
