@@ -171,6 +171,7 @@ def _vista_admin(partido, jugadores_registrados):
     inscritos = inscripciones.listar_inscripciones_partido(partido["id"])
     confirmados_lista = [i for i in inscritos if i["estado"] == "confirmado"]
     confirmados = len(confirmados_lista)
+    multas_por_jugador = {m["jugador_id"]: m for m in multas.listar_multas_partido(partido["id"])}
 
     col_info, col_a, col_b = st.columns([3, 1, 1])
     with col_info:
@@ -273,6 +274,28 @@ def _vista_admin(partido, jugadores_registrados):
                         multas.crear_multa(i["jugador_id"], partido["id"], "no_asistio", config["monto_multa_no_asistio"])
                     st.rerun()
 
+                multa_jugador = multas_por_jugador.get(i["jugador_id"])
+                if multa_jugador:
+                    etiqueta_tipo_multa = "Tardanza" if multa_jugador["tipo"] == "tardanza" else "No asistencia"
+                    col_multa_info, col_multa_btn = st.columns([2, 1])
+                    if multa_jugador["estado"] == "pagado":
+                        col_multa_info.markdown(
+                            f"⚠️ Multa por {etiqueta_tipo_multa}: S/ {multa_jugador['monto']:.2f} &nbsp; "
+                            + estilos.badge_pago("verificado"),
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        estado_multa_badge = "pendiente" if multa_jugador["estado"] == "pendiente_verificacion" else "sin_pago"
+                        col_multa_info.markdown(
+                            f"⚠️ Multa por {etiqueta_tipo_multa}: S/ {multa_jugador['monto']:.2f} &nbsp; "
+                            + estilos.badge_pago(estado_multa_badge),
+                            unsafe_allow_html=True,
+                        )
+                        if col_multa_btn.button("💵 Multa pagada (efectivo)", key=f"multa_efectivo_{multa_jugador['id']}"):
+                            multas.marcar_pagado_manual(multa_jugador["id"], usuario["id"])
+                            st.toast(f"Multa de {nombre_mostrar} marcada como pagada.", icon="💵")
+                            st.rerun()
+
                 if i["asistio"] == "no_llego":
                     clave_mostrar = f"mostrar_reemplazo_{i['id']}"
                     if not st.session_state.get(clave_mostrar):
@@ -294,6 +317,30 @@ def _vista_admin(partido, jugadores_registrados):
                                 st.toast(f"{elegido_r.split(' — ')[0]} entra en lugar de {nombre_mostrar}.", icon="🔁")
                                 st.session_state[clave_mostrar] = False
                                 st.rerun()
+
+        multas_huerfanas = {
+            jid: m for jid, m in multas_por_jugador.items() if jid not in ids_en_partido and m["estado"] != "pagado"
+        }
+        if multas_huerfanas:
+            st.divider()
+            st.caption(
+                "Estos jugadores ya no están en la lista de arriba (se les quitó o reemplazó), pero "
+                "siguen debiendo esta multa:"
+            )
+            jugadores_por_id = {j["id"]: j for j in jugadores_registrados}
+            for jid, m in multas_huerfanas.items():
+                jugador_multa = jugadores_por_id.get(jid)
+                nombre_multa = _nombre_completo(jugador_multa) if jugador_multa else f"Jugador #{jid}"
+                etiqueta_tipo = "Tardanza" if m["tipo"] == "tardanza" else "No asistencia"
+                col_nombre_h, col_info_h, col_btn_h = st.columns([2, 1.3, 1.3])
+                col_nombre_h.write(f"**{nombre_multa}**")
+                col_info_h.write(f"{etiqueta_tipo} — S/ {m['monto']:.2f}")
+                estado_badge_h = "pendiente" if m["estado"] == "pendiente_verificacion" else "sin_pago"
+                col_btn_h.markdown(estilos.badge_pago(estado_badge_h), unsafe_allow_html=True)
+                if st.button("💵 Marcar pagada (efectivo)", key=f"multa_huerfana_{m['id']}"):
+                    multas.marcar_pagado_manual(m["id"], usuario["id"])
+                    st.toast(f"Multa de {nombre_multa} marcada como pagada.", icon="💵")
+                    st.rerun()
 
         recaudo = pagos.cuadre_partido(partido["id"])
         st.divider()
