@@ -39,32 +39,41 @@ def obtener_inscripcion_por_id(inscripcion_id):
         conexion.close()
 
 
+_CASO_CUPO = """
+    CASE WHEN (SELECT COUNT(*) FROM inscripciones WHERE partido_id = ? AND estado = 'confirmado') < ?
+         THEN 'confirmado' ELSE 'lista_espera' END
+"""
+
+
 def inscribir_jugador(partido_id, jugador_id, cupo_max):
     """Confirma al jugador, o lo manda a lista de espera si ya no hay cupo.
+
+    El cupo se cuenta y se escribe en la misma sentencia SQL (no en un
+    SELECT aparte seguido de un INSERT/UPDATE) para que dos jugadores
+    confirmando al mismo tiempo por el último cupo no puedan colarse los
+    dos como 'confirmado'.
 
     Si ya tenía una inscripción cancelada para este partido, la reactiva en
     vez de crear una fila nueva (evita chocar con el UNIQUE(partido_id,
     jugador_id)).
     """
-    nuevo_estado = "confirmado" if contar_confirmados(partido_id) < cupo_max else "lista_espera"
-
     existente = obtener_inscripcion(partido_id, jugador_id)
     conexion = get_connection()
     try:
         if existente:
             conexion.execute(
-                "UPDATE inscripciones SET estado = ?, asistio = NULL WHERE id = ?",
-                (nuevo_estado, existente["id"]),
+                f"UPDATE inscripciones SET estado = ({_CASO_CUPO}), asistio = NULL WHERE id = ?",
+                (partido_id, cupo_max, existente["id"]),
             )
         else:
             conexion.execute(
-                "INSERT INTO inscripciones (partido_id, jugador_id, estado) VALUES (?, ?, ?)",
-                (partido_id, jugador_id, nuevo_estado),
+                f"INSERT INTO inscripciones (partido_id, jugador_id, estado) VALUES (?, ?, ({_CASO_CUPO}))",
+                (partido_id, jugador_id, partido_id, cupo_max),
             )
         conexion.commit()
+        return obtener_inscripcion(partido_id, jugador_id)["estado"]
     finally:
         conexion.close()
-    return nuevo_estado
 
 
 def cancelar_inscripcion(inscripcion_id):

@@ -133,7 +133,7 @@ else:
     else:
         st.subheader("Próximas pichangas")
         for partido in proximos[:3]:
-            inscripcion = inscripciones.obtener_inscripcion(partido["id"], jugador["id"])
+            inscripcion = inscripciones.obtener_inscripcion(partido["id"], jugador["id"]) if jugador else None
             estado_txt = "No confirmado"
             if inscripcion and inscripcion["estado"] != "cancelado":
                 estado_txt = estilos.badge_inscripcion(inscripcion["estado"])

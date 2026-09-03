@@ -1,0 +1,6 @@
+[client]
+# Si algo falla (ej. un corte de red hacia la base de datos en la nube),
+# que los jugadores vean un mensaje genérico en vez del traceback completo
+# de Python — Carlos igual puede ver el error real en los logs de Streamlit
+# Cloud.
+showErrorDetails = "none"

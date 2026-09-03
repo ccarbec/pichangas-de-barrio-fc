@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from models import club_config, estadios, inscripciones, jugadores, multas, pagos, partidos
-from utils import auth, estilos
+from utils import archivos, auth, estilos
 
 auth.requerir_login()
 estilos.aplicar_tema()
@@ -92,9 +92,13 @@ if jugador_sesion:
                         type=["png", "jpg", "jpeg"], key=f"comprobante_multa_{m['id']}",
                     )
                     if comprobante_multa is not None and st.button("Enviar comprobante", key=f"enviar_multa_{m['id']}"):
-                        multas.subir_comprobante(m["id"], comprobante_multa.getvalue(), comprobante_multa.type)
-                        st.toast("Comprobante de multa enviado.", icon="📤")
-                        st.rerun()
+                        error_tamano = archivos.validar_tamano_imagen(comprobante_multa)
+                        if error_tamano:
+                            st.error(error_tamano)
+                        else:
+                            multas.subir_comprobante(m["id"], comprobante_multa.getvalue(), comprobante_multa.type)
+                            st.toast("Comprobante de multa enviado.", icon="📤")
+                            st.rerun()
                 st.divider()
 
 tab_programados, tab_historial = st.tabs(["Programados", "Jugados / cancelados"])
@@ -159,11 +163,15 @@ def _vista_jugador(partido, jugador):
             )
             if comprobante is not None:
                 if st.button("Enviar comprobante", key=f"enviar_pago_{partido['id']}"):
-                    pagos.registrar_pago(
-                        inscripcion["id"], partido["costo_por_jugador"], comprobante.getvalue(), comprobante.type
-                    )
-                    st.toast("Comprobante enviado, a la espera de verificación.", icon="📤")
-                    st.rerun()
+                    error_tamano = archivos.validar_tamano_imagen(comprobante)
+                    if error_tamano:
+                        st.error(error_tamano)
+                    else:
+                        pagos.registrar_pago(
+                            inscripcion["id"], partido["costo_por_jugador"], comprobante.getvalue(), comprobante.type
+                        )
+                        st.toast("Comprobante enviado, a la espera de verificación.", icon="📤")
+                        st.rerun()
 
 
 # ---------------------------------------------------------------- vista admin
@@ -421,7 +429,7 @@ with tab_programados:
             if jugador_actual:
                 with st.expander("⚽ Mi asistencia a este partido"):
                     _vista_jugador(partido, jugador_actual)
-        else:
+        elif jugador_actual:
             _vista_jugador(partido, jugador_actual)
 
 with tab_historial:

@@ -4,7 +4,7 @@ hincha, qué camiseta usa, y una reseña libre sobre sí mismo."""
 import streamlit as st
 
 from models import jugadores
-from utils import auth, estilos
+from utils import archivos, auth, estilos
 
 auth.requerir_login()
 estilos.aplicar_tema()
@@ -39,9 +39,13 @@ with col_foto:
         st.caption("Todavía no subes una foto.")
     nueva_foto = st.file_uploader("Cambiar foto", type=["png", "jpg", "jpeg"], key="nueva_foto_perfil")
     if nueva_foto is not None and st.button("Guardar foto"):
-        jugadores.subir_foto(jugador["id"], nueva_foto.getvalue(), nueva_foto.type)
-        st.toast("Foto actualizada.", icon="📸")
-        st.rerun()
+        error_tamano = archivos.validar_tamano_imagen(nueva_foto)
+        if error_tamano:
+            st.error(error_tamano)
+        else:
+            jugadores.subir_foto(jugador["id"], nueva_foto.getvalue(), nueva_foto.type)
+            st.toast("Foto actualizada.", icon="📸")
+            st.rerun()
 
 with col_datos:
     with st.form("mi_perfil"):
