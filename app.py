@@ -132,8 +132,12 @@ else:
         st.info("Todavía no hay pichangas programadas. Vuelve a revisar más tarde.")
     else:
         st.subheader("Próximas pichangas")
+        ids_proximos = [p["id"] for p in proximos[:3]]
+        inscripciones_por_partido = (
+            inscripciones.listar_inscripciones_jugador_multiples(jugador["id"], ids_proximos) if jugador else {}
+        )
         for partido in proximos[:3]:
-            inscripcion = inscripciones.obtener_inscripcion(partido["id"], jugador["id"]) if jugador else None
+            inscripcion = inscripciones_por_partido.get(partido["id"])
             estado_txt = "No confirmado"
             if inscripcion and inscripcion["estado"] != "cancelado":
                 estado_txt = estilos.badge_inscripcion(inscripcion["estado"])

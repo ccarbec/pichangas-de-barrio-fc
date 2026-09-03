@@ -105,9 +105,11 @@ tab_programados, tab_historial = st.tabs(["Programados", "Jugados / cancelados"]
 
 
 # ---------------------------------------------------------------- vista jugador
-def _vista_jugador(partido, jugador):
-    inscripcion = inscripciones.obtener_inscripcion(partido["id"], jugador["id"])
-    confirmados = inscripciones.contar_confirmados(partido["id"])
+def _vista_jugador(partido, jugador, inscripcion, confirmados, pago, bloqueado_multa):
+    """inscripcion/confirmados/pago/bloqueado_multa llegan ya calculados
+    desde el bloque de render (una sola consulta para todas las pichangas
+    en pantalla, no una por cada una) — ver el "batch fetch" antes del
+    for de tab_programados."""
     inscrito_activo = inscripcion and inscripcion["estado"] != "cancelado"
 
     col_info, col_accion = st.columns([3, 2])
@@ -128,11 +130,10 @@ def _vista_jugador(partido, jugador):
 
     with col_accion:
         if not inscrito_activo:
-            bloqueado = multas.tiene_multa_no_asistio_pendiente(jugador["id"])
-            if bloqueado:
+            if bloqueado_multa:
                 st.caption("Tienes una multa por no asistencia sin pagar — págala arriba para poder confirmar.")
             if st.button(
-                "Confirmar asistencia", key=f"confirmar_{partido['id']}", type="primary", disabled=bloqueado
+                "Confirmar asistencia", key=f"confirmar_{partido['id']}", type="primary", disabled=bloqueado_multa
             ):
                 estado = inscripciones.inscribir_jugador(partido["id"], jugador["id"], partido["cupo_max"])
                 if estado == "confirmado":
@@ -147,7 +148,6 @@ def _vista_jugador(partido, jugador):
                 st.rerun()
 
     if inscrito_activo and inscripcion["estado"] == "confirmado":
-        pago = pagos.obtener_pago_por_inscripcion(inscripcion["id"])
         st.markdown(estilos.badge_pago(pago["estado"] if pago else "sin_pago"), unsafe_allow_html=True)
 
         if pago and pago["estado"] == "rechazado":
@@ -422,15 +422,33 @@ with tab_programados:
     lista = partidos.listar_partidos(estado="programado")
     if not lista:
         st.info("No hay pichangas programadas todavía.")
+
+    # Batch: una sola consulta para TODAS las pichangas en pantalla en vez
+    # de una por cada una — con varias pichangas programadas esto es la
+    # diferencia entre segundos de espera y una carga instantánea.
+    ids_programados = [p["id"] for p in lista]
+    confirmados_por_partido = inscripciones.contar_confirmados_multiples(ids_programados)
+    inscripciones_por_partido = (
+        inscripciones.listar_inscripciones_jugador_multiples(jugador_actual["id"], ids_programados)
+        if jugador_actual else {}
+    )
+    pagos_por_inscripcion = pagos.listar_pagos_por_inscripciones(
+        [i["id"] for i in inscripciones_por_partido.values() if i["estado"] == "confirmado"]
+    )
+    bloqueado_multa = multas.tiene_multa_no_asistio_pendiente(jugador_actual["id"]) if jugador_actual else False
+
     for partido in lista:
         st.divider()
+        inscripcion = inscripciones_por_partido.get(partido["id"])
+        confirmados = confirmados_por_partido.get(partido["id"], 0)
+        pago = pagos_por_inscripcion.get(inscripcion["id"]) if inscripcion else None
         if auth.es_admin():
             _vista_admin(partido, jugadores_registrados)
             if jugador_actual:
                 with st.expander("⚽ Mi asistencia a este partido"):
-                    _vista_jugador(partido, jugador_actual)
+                    _vista_jugador(partido, jugador_actual, inscripcion, confirmados, pago, bloqueado_multa)
         elif jugador_actual:
-            _vista_jugador(partido, jugador_actual)
+            _vista_jugador(partido, jugador_actual, inscripcion, confirmados, pago, bloqueado_multa)
 
 with tab_historial:
     lista = [p for p in partidos.listar_partidos() if p["estado"] in ("jugado", "cancelado")]

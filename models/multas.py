@@ -95,6 +95,28 @@ def listar_multas_partido(partido_id):
         conexion.close()
 
 
+def listar_todas_pendientes():
+    """Todas las multas en estado 'debe' (sin comprobante en revisión, sin
+    pagar), de cualquier partido, en una sola consulta — para el listado
+    "Todas las multas pendientes" de Pagos, que si no crece 1 ida y vuelta
+    a Turso por cada partido del historial del club."""
+    conexion = get_connection()
+    try:
+        filas = conexion.execute(
+            """
+            SELECT multas.*, usuarios.nombre, jugadores.apodo, jugadores.apellidos
+            FROM multas
+            JOIN jugadores ON jugadores.id = multas.jugador_id
+            JOIN usuarios ON usuarios.id = jugadores.usuario_id
+            WHERE multas.estado = 'debe'
+            ORDER BY jugadores.apellidos, usuarios.nombre
+            """
+        ).fetchall()
+        return [dict(f) for f in filas]
+    finally:
+        conexion.close()
+
+
 def listar_pendientes_verificacion():
     """Multas con comprobante subido, esperando que el admin las apruebe o
     rechace (para la página Pagos)."""

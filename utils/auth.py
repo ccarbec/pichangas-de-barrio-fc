@@ -35,14 +35,19 @@ def verificar_password(password, hash_guardado, salt):
 
 
 def iniciar_sesion(datos_usuario):
+    """La limpieza de sesiones vencidas solo corre ~1 de cada 20 logins (no
+    hace falta en cada uno, y cada consulta a Turso cuesta ~500ms) — una
+    sesión vencida igual no sirve para nada, porque _restaurar_sesion ya
+    filtra por antigüedad al validar el token."""
     st.session_state["usuario"] = datos_usuario
     token = secrets.token_urlsafe(32)
     conexion = get_connection()
     try:
-        conexion.execute(
-            "DELETE FROM sesiones WHERE julianday('now','localtime') - julianday(creado_en) > ?",
-            (DIAS_DURACION_SESION,),
-        )
+        if secrets.randbelow(20) == 0:
+            conexion.execute(
+                "DELETE FROM sesiones WHERE julianday('now','localtime') - julianday(creado_en) > ?",
+                (DIAS_DURACION_SESION,),
+            )
         conexion.execute(
             "INSERT INTO sesiones (token, usuario_id) VALUES (?, ?)",
             (token, datos_usuario["id"]),

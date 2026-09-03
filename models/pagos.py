@@ -15,6 +15,23 @@ def obtener_pago_por_inscripcion(inscripcion_id):
         conexion.close()
 
 
+def listar_pagos_por_inscripciones(inscripcion_ids):
+    """Como obtener_pago_por_inscripcion, pero para varias inscripciones a
+    la vez en una sola consulta (jugador viendo varias pichangas propias)."""
+    if not inscripcion_ids:
+        return {}
+    conexion = get_connection()
+    try:
+        placeholders = ",".join("?" * len(inscripcion_ids))
+        filas = conexion.execute(
+            f"SELECT * FROM pagos WHERE inscripcion_id IN ({placeholders})",
+            tuple(inscripcion_ids),
+        ).fetchall()
+        return {f["inscripcion_id"]: dict(f) for f in filas}
+    finally:
+        conexion.close()
+
+
 def obtener_pago(pago_id):
     conexion = get_connection()
     try:

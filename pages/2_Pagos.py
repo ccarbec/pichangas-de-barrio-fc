@@ -73,11 +73,7 @@ with tab_multas:
                         st.rerun()
 
     st.markdown("##### Todas las multas pendientes")
-    lista_partidos_multa = partidos.listar_partidos()
-    todas_pendientes = []
-    for p in lista_partidos_multa:
-        todas_pendientes.extend([m for m in multas.listar_multas_partido(p["id"]) if m["estado"] == "debe"])
-    todas_pendientes.sort(key=lambda m: ((m.get("apellidos") or ""), m.get("nombre") or ""))
+    todas_pendientes = multas.listar_todas_pendientes()
 
     if not todas_pendientes:
         st.success("No hay multas pendientes de pago.")

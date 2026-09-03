@@ -28,6 +28,46 @@ def obtener_inscripcion(partido_id, jugador_id):
         conexion.close()
 
 
+def listar_inscripciones_jugador_multiples(jugador_id, partido_ids):
+    """Como obtener_inscripcion, pero para varios partidos a la vez en una
+    sola consulta — el jugador ve varias pichangas en la misma pantalla y
+    antes se pedía cada una por separado (1 ida y vuelta a Turso c/u)."""
+    if not partido_ids:
+        return {}
+    conexion = get_connection()
+    try:
+        placeholders = ",".join("?" * len(partido_ids))
+        filas = conexion.execute(
+            f"SELECT * FROM inscripciones WHERE jugador_id = ? AND partido_id IN ({placeholders})",
+            (jugador_id, *partido_ids),
+        ).fetchall()
+        return {f["partido_id"]: dict(f) for f in filas}
+    finally:
+        conexion.close()
+
+
+def contar_confirmados_multiples(partido_ids):
+    """Como contar_confirmados, pero para varios partidos en una sola
+    consulta — evita 1 ida y vuelta a Turso por cada pichanga en pantalla."""
+    if not partido_ids:
+        return {}
+    conexion = get_connection()
+    try:
+        placeholders = ",".join("?" * len(partido_ids))
+        filas = conexion.execute(
+            f"""
+            SELECT partido_id, COUNT(*) AS n FROM inscripciones
+            WHERE partido_id IN ({placeholders}) AND estado = 'confirmado'
+            GROUP BY partido_id
+            """,
+            tuple(partido_ids),
+        ).fetchall()
+        conteos = {f["partido_id"]: f["n"] for f in filas}
+        return {pid: conteos.get(pid, 0) for pid in partido_ids}
+    finally:
+        conexion.close()
+
+
 def obtener_inscripcion_por_id(inscripcion_id):
     conexion = get_connection()
     try:
