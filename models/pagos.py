@@ -159,6 +159,48 @@ def rechazar_pago(pago_id, verificado_por, nota=""):
         conexion.close()
 
 
+def cuadre_multiples(partido_ids):
+    """Como cuadre_partido, pero para varios partidos en una sola ida y
+    vuelta a Turso (2 consultas agregadas en vez de 2 por cada partido
+    mostrado en pantalla)."""
+    if not partido_ids:
+        return {}
+    conexion = get_connection()
+    try:
+        placeholders = ",".join("?" * len(partido_ids))
+        recaudado_filas = conexion.execute(
+            f"""
+            SELECT inscripciones.partido_id AS partido_id, COALESCE(SUM(pagos.monto), 0) AS total
+            FROM pagos
+            JOIN inscripciones ON inscripciones.id = pagos.inscripcion_id
+            WHERE inscripciones.partido_id IN ({placeholders}) AND pagos.estado = 'verificado'
+            GROUP BY inscripciones.partido_id
+            """,
+            tuple(partido_ids),
+        ).fetchall()
+        pendiente_filas = conexion.execute(
+            f"""
+            SELECT inscripciones.partido_id AS partido_id, COALESCE(SUM(pagos.monto), 0) AS total
+            FROM pagos
+            JOIN inscripciones ON inscripciones.id = pagos.inscripcion_id
+            WHERE inscripciones.partido_id IN ({placeholders}) AND pagos.estado = 'pendiente'
+            GROUP BY inscripciones.partido_id
+            """,
+            tuple(partido_ids),
+        ).fetchall()
+    finally:
+        conexion.close()
+    recaudado_por_partido = {f["partido_id"]: f["total"] for f in recaudado_filas}
+    pendiente_por_partido = {f["partido_id"]: f["total"] for f in pendiente_filas}
+    return {
+        pid: {
+            "recaudado": recaudado_por_partido.get(pid, 0),
+            "pendiente": pendiente_por_partido.get(pid, 0),
+        }
+        for pid in partido_ids
+    }
+
+
 def cuadre_partido(partido_id):
     conexion = get_connection()
     try:

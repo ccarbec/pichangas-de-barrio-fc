@@ -188,6 +188,46 @@ def listar_inscripciones_partido(partido_id):
         conexion.close()
 
 
+def listar_inscripciones_multiples(partido_ids):
+    """Como listar_inscripciones_partido, pero para varios partidos a la
+    vez en una sola consulta — el panel de admin mostraba N partidos
+    haciendo N consultas (una por cada uno); ahora es una sola sin
+    importar cuántos partidos estén en pantalla."""
+    if not partido_ids:
+        return {}
+    conexion = get_connection()
+    try:
+        placeholders = ",".join("?" * len(partido_ids))
+        filas = conexion.execute(
+            f"""
+            SELECT
+                inscripciones.*,
+                usuarios.nombre,
+                usuarios.telefono,
+                jugadores.apodo,
+                jugadores.apellidos,
+                jugadores.posicion,
+                COALESCE(pagos.estado, 'sin_pago') AS estado_pago,
+                pagos.id AS pago_id
+            FROM inscripciones
+            JOIN jugadores ON jugadores.id = inscripciones.jugador_id
+            JOIN usuarios ON usuarios.id = jugadores.usuario_id
+            LEFT JOIN pagos ON pagos.inscripcion_id = inscripciones.id
+            WHERE inscripciones.partido_id IN ({placeholders}) AND inscripciones.estado != 'cancelado'
+            ORDER BY
+                CASE inscripciones.estado WHEN 'confirmado' THEN 0 ELSE 1 END,
+                jugadores.apellidos, usuarios.nombre
+            """,
+            tuple(partido_ids),
+        ).fetchall()
+    finally:
+        conexion.close()
+    por_partido = {pid: [] for pid in partido_ids}
+    for f in filas:
+        por_partido.setdefault(f["partido_id"], []).append(dict(f))
+    return por_partido
+
+
 def reemplazar(inscripcion_no_llego_id, jugador_reemplazo_id):
     """Confirma a jugador_reemplazo_id en el mismo partido que
     inscripcion_no_llego_id — sin tocar la inscripción original (se queda

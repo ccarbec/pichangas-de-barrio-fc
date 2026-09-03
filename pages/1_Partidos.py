@@ -175,11 +175,13 @@ def _vista_jugador(partido, jugador, inscripcion, confirmados, pago, bloqueado_m
 
 
 # ---------------------------------------------------------------- vista admin
-def _vista_admin(partido, jugadores_registrados):
-    inscritos = inscripciones.listar_inscripciones_partido(partido["id"])
+def _vista_admin(partido, jugadores_registrados, inscritos, multas_partido, cuadre):
+    """inscritos/multas_partido/cuadre llegan ya calculados desde el bloque
+    de render (un solo batch para todas las pichangas en pantalla, no una
+    consulta por cada una — ver el "batch fetch" antes de cada for)."""
     confirmados_lista = [i for i in inscritos if i["estado"] == "confirmado"]
     confirmados = len(confirmados_lista)
-    multas_por_jugador = {m["jugador_id"]: m for m in multas.listar_multas_partido(partido["id"])}
+    multas_por_jugador = {m["jugador_id"]: m for m in multas_partido}
 
     col_info, col_a, col_b = st.columns([3, 1, 1])
     with col_info:
@@ -350,7 +352,7 @@ def _vista_admin(partido, jugadores_registrados):
                     st.toast(f"Multa de {nombre_multa} marcada como pagada.", icon="💵")
                     st.rerun()
 
-        recaudo = pagos.cuadre_partido(partido["id"])
+        recaudo = cuadre
         st.divider()
         c1, c2, c3 = st.columns(3)
         c1.metric("Recaudado (verificado)", f"S/ {recaudo['recaudado']:.2f}")
@@ -362,7 +364,6 @@ def _vista_admin(partido, jugadores_registrados):
             marcados = sum(1 for i in confirmados_lista if i["asistio"])
             col_r1, col_r2 = st.columns(2)
             col_r1.metric("Asistencia marcada", f"{marcados}/{len(confirmados_lista)}")
-            multas_partido = multas.listar_multas_partido(partido["id"])
             col_r2.metric("Multas generadas", len(multas_partido))
 
             st.dataframe(
@@ -437,13 +438,22 @@ with tab_programados:
     )
     bloqueado_multa = multas.tiene_multa_no_asistio_pendiente(jugador_actual["id"]) if jugador_actual else False
 
+    inscritos_por_partido_admin = inscripciones.listar_inscripciones_multiples(ids_programados) if auth.es_admin() else {}
+    multas_por_partido_admin = multas.listar_multas_multiples(ids_programados) if auth.es_admin() else {}
+    cuadre_por_partido_admin = pagos.cuadre_multiples(ids_programados) if auth.es_admin() else {}
+
     for partido in lista:
         st.divider()
         inscripcion = inscripciones_por_partido.get(partido["id"])
         confirmados = confirmados_por_partido.get(partido["id"], 0)
         pago = pagos_por_inscripcion.get(inscripcion["id"]) if inscripcion else None
         if auth.es_admin():
-            _vista_admin(partido, jugadores_registrados)
+            _vista_admin(
+                partido, jugadores_registrados,
+                inscritos_por_partido_admin.get(partido["id"], []),
+                multas_por_partido_admin.get(partido["id"], []),
+                cuadre_por_partido_admin.get(partido["id"], {"recaudado": 0, "pendiente": 0}),
+            )
             if jugador_actual:
                 with st.expander("⚽ Mi asistencia a este partido"):
                     _vista_jugador(partido, jugador_actual, inscripcion, confirmados, pago, bloqueado_multa)
@@ -454,11 +464,22 @@ with tab_historial:
     lista = [p for p in partidos.listar_partidos() if p["estado"] in ("jugado", "cancelado")]
     if not lista:
         st.caption("Todavía no hay partidos jugados o cancelados.")
+
+    ids_historial = [p["id"] for p in lista]
+    inscritos_por_partido_h = inscripciones.listar_inscripciones_multiples(ids_historial) if auth.es_admin() else {}
+    multas_por_partido_h = multas.listar_multas_multiples(ids_historial) if auth.es_admin() else {}
+    cuadre_por_partido_h = pagos.cuadre_multiples(ids_historial) if auth.es_admin() else {}
+
     for partido in reversed(lista):
         st.divider()
         estado_txt = "✅ Jugado" if partido["estado"] == "jugado" else "🚫 Cancelado"
         st.caption(estado_txt)
         if auth.es_admin():
-            _vista_admin(partido, jugadores_registrados)
+            _vista_admin(
+                partido, jugadores_registrados,
+                inscritos_por_partido_h.get(partido["id"], []),
+                multas_por_partido_h.get(partido["id"], []),
+                cuadre_por_partido_h.get(partido["id"], {"recaudado": 0, "pendiente": 0}),
+            )
         else:
             st.markdown(f"**{partido['fecha']} · {partido['hora']}** — {partido['cancha']}")

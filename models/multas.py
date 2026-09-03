@@ -76,23 +76,31 @@ def listar_multas_jugador(jugador_id, solo_pendientes=True):
         conexion.close()
 
 
-def listar_multas_partido(partido_id):
+def listar_multas_multiples(partido_ids):
+    """Multas de varios partidos a la vez en una sola consulta — el panel
+    de admin las pedía una por una por cada partido mostrado en pantalla."""
+    if not partido_ids:
+        return {}
     conexion = get_connection()
     try:
+        placeholders = ",".join("?" * len(partido_ids))
         filas = conexion.execute(
-            """
+            f"""
             SELECT multas.*, usuarios.nombre, jugadores.apodo, jugadores.apellidos
             FROM multas
             JOIN jugadores ON jugadores.id = multas.jugador_id
             JOIN usuarios ON usuarios.id = jugadores.usuario_id
-            WHERE multas.partido_id = ?
+            WHERE multas.partido_id IN ({placeholders})
             ORDER BY multas.fecha_creacion
             """,
-            (partido_id,),
+            tuple(partido_ids),
         ).fetchall()
-        return [dict(f) for f in filas]
     finally:
         conexion.close()
+    por_partido = {pid: [] for pid in partido_ids}
+    for f in filas:
+        por_partido.setdefault(f["partido_id"], []).append(dict(f))
+    return por_partido
 
 
 def listar_todas_pendientes():
