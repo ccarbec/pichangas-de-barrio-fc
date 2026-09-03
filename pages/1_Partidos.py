@@ -167,7 +167,7 @@ def _vista_jugador(partido, jugador):
 
 
 # ---------------------------------------------------------------- vista admin
-def _vista_admin(partido):
+def _vista_admin(partido, jugadores_registrados):
     inscritos = inscripciones.listar_inscripciones_partido(partido["id"])
     confirmados_lista = [i for i in inscritos if i["estado"] == "confirmado"]
     confirmados = len(confirmados_lista)
@@ -208,7 +208,7 @@ def _vista_admin(partido):
 
     with st.expander("Ver inscritos"):
         ids_ya_inscritos = {i["jugador_id"] for i in inscritos}
-        disponibles = [j for j in jugadores.listar_jugadores() if j["id"] not in ids_ya_inscritos]
+        disponibles = [j for j in jugadores_registrados if j["id"] not in ids_ya_inscritos]
         if disponibles:
             col_sel, col_btn = st.columns([3, 1])
             opciones = {f"{_nombre_completo(j)} — {j['telefono']}": j for j in disponibles}
@@ -280,7 +280,7 @@ def _vista_admin(partido):
                             st.session_state[clave_mostrar] = True
                             st.rerun()
                     else:
-                        candidatos = [j for j in jugadores.listar_jugadores() if j["id"] not in ids_en_partido]
+                        candidatos = [j for j in jugadores_registrados if j["id"] not in ids_en_partido]
                         if not candidatos:
                             st.caption("No hay más jugadores registrados disponibles para reemplazar.")
                         else:
@@ -358,6 +358,10 @@ def _vista_admin(partido):
 
 # ---------------------------------------------------------------- render
 jugador_actual = jugadores.obtener_jugador_por_usuario(usuario["id"])
+# Se pide UNA sola vez (no una por cada pichanga en pantalla) — cada consulta
+# a la nube (Turso) cuesta ~500ms de ida y vuelta, y esta lista no cambia
+# entre que se dibuja un partido y el siguiente en la misma carga de página.
+jugadores_registrados = jugadores.listar_jugadores() if auth.es_admin() else []
 
 with tab_programados:
     lista = partidos.listar_partidos(estado="programado")
@@ -366,7 +370,7 @@ with tab_programados:
     for partido in lista:
         st.divider()
         if auth.es_admin():
-            _vista_admin(partido)
+            _vista_admin(partido, jugadores_registrados)
             if jugador_actual:
                 with st.expander("⚽ Mi asistencia a este partido"):
                     _vista_jugador(partido, jugador_actual)
@@ -382,6 +386,6 @@ with tab_historial:
         estado_txt = "✅ Jugado" if partido["estado"] == "jugado" else "🚫 Cancelado"
         st.caption(estado_txt)
         if auth.es_admin():
-            _vista_admin(partido)
+            _vista_admin(partido, jugadores_registrados)
         else:
             st.markdown(f"**{partido['fecha']} · {partido['hora']}** — {partido['cancha']}")

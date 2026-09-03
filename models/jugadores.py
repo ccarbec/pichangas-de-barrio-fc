@@ -1,6 +1,8 @@
 """Perfil de jugador (apodo, posición) y el alta combinada usuario+jugador
 que usan tanto el auto-registro como el CRUD del admin."""
 
+import streamlit as st
+
 from database.connection import get_connection
 from models import usuarios
 
@@ -25,6 +27,7 @@ def registrar_jugador(nombre, telefono, password, apodo="", posicion="", apellid
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()
     return usuario_id
 
 
@@ -43,6 +46,7 @@ def crear_perfil_jugador(usuario_id, apodo="", posicion=""):
         return cursor.lastrowid
     finally:
         conexion.close()
+        listar_jugadores.clear()
 
 
 def obtener_jugador_por_usuario(usuario_id):
@@ -82,9 +86,16 @@ def obtener_jugador(jugador_id):
         conexion.close()
 
 
+@st.cache_data(ttl=20)
 def listar_jugadores(solo_activos=True):
     """No trae la foto de cada jugador — se pediría el blob de todos cada
-    vez que se llena un selectbox. Para mostrar fotos, usar obtener_foto()."""
+    vez que se llena un selectbox. Para mostrar fotos, usar obtener_foto().
+
+    Cacheado 20 segundos: cada consulta a Turso tarda ~500ms de ida y
+    vuelta, y esta lista se pide muchas veces por página (dropdowns,
+    galería, etc.) sin cambiar entre un clic y el siguiente. Toda función
+    que agregue/edite/borre un jugador debe llamar listar_jugadores.clear()
+    para no dejar la caché desactualizada."""
     conexion = get_connection()
     try:
         consulta = f"""
@@ -126,6 +137,7 @@ def subir_foto(jugador_id, imagen_bytes, mime):
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()
 
 
 def actualizar_resena(jugador_id, resena):
@@ -135,6 +147,7 @@ def actualizar_resena(jugador_id, resena):
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()
 
 
 def actualizar_jugador(jugador_id, apodo, posicion, apellidos="", equipo_hincha="", camiseta=""):
@@ -151,6 +164,7 @@ def actualizar_jugador(jugador_id, apodo, posicion, apellidos="", equipo_hincha=
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()
 
 
 def tiene_inscripciones(jugador_id):
@@ -182,6 +196,7 @@ def eliminar_jugador(jugador_id):
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()
 
 
 def desactivar_jugador(jugador_id):
@@ -196,6 +211,7 @@ def desactivar_jugador(jugador_id):
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()
 
 
 def reactivar_jugador(jugador_id):
@@ -209,3 +225,4 @@ def reactivar_jugador(jugador_id):
         conexion.commit()
     finally:
         conexion.close()
+    listar_jugadores.clear()

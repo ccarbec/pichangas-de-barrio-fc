@@ -1,6 +1,8 @@
 """Datos del club: Yape del presidente/tesorero (para la pantalla de pago)
 y los montos de multa por tardanza/no-asistencia. Fila única (id = 1)."""
 
+import streamlit as st
+
 from database.connection import get_connection
 
 _DEFAULTS = {
@@ -11,7 +13,10 @@ _DEFAULTS = {
 }
 
 
+@st.cache_data(ttl=20)
 def obtener_config():
+    """Cacheado 20 segundos — se lee en casi todas las páginas y casi
+    nunca cambia. guardar_config() limpia la caché después de escribir."""
     conexion = get_connection()
     try:
         fila = conexion.execute("SELECT * FROM club_config WHERE id = 1").fetchone()
@@ -40,3 +45,4 @@ def guardar_config(nombre_yape, telefono_yape, monto_multa_tardanza=None, monto_
         conexion.commit()
     finally:
         conexion.close()
+    obtener_config.clear()
