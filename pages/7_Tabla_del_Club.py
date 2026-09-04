@@ -4,7 +4,7 @@ más, quién llega tarde, quién falta, y quién debe multas."""
 import pandas as pd
 import streamlit as st
 
-from database.connection import get_connection
+from models import estadisticas
 from utils import auth, estilos
 
 auth.requerir_login()
@@ -13,43 +13,7 @@ estilos.aplicar_tema()
 st.title("🏆 Tabla del Club")
 st.caption("Un ranking de puntualidad y compromiso — no de goles (todavía 😄).")
 
-
-@st.cache_data(ttl=30)
-def _tabla():
-    conexion = get_connection()
-    try:
-        filas = conexion.execute(
-            """
-            SELECT
-                jugadores.id,
-                usuarios.nombre,
-                jugadores.apellidos,
-                jugadores.apodo,
-                jugadores.posicion,
-                SUM(CASE WHEN inscripciones.asistio = 'llego' THEN 1 ELSE 0 END) AS jugados,
-                SUM(CASE WHEN inscripciones.asistio = 'tardanza' THEN 1 ELSE 0 END) AS tardanzas,
-                SUM(CASE WHEN inscripciones.asistio = 'no_llego' THEN 1 ELSE 0 END) AS no_asistio
-            FROM jugadores
-            JOIN usuarios ON usuarios.id = jugadores.usuario_id
-            LEFT JOIN inscripciones ON inscripciones.jugador_id = jugadores.id
-            WHERE jugadores.estado = 'activo'
-            GROUP BY jugadores.id
-            ORDER BY jugados DESC, tardanzas ASC, no_asistio ASC
-            """
-        ).fetchall()
-        multas_por_jugador = conexion.execute(
-            """
-            SELECT jugador_id, COUNT(*) AS n
-            FROM multas WHERE estado != 'pagado'
-            GROUP BY jugador_id
-            """
-        ).fetchall()
-        return [dict(f) for f in filas], {m["jugador_id"]: m["n"] for m in multas_por_jugador}
-    finally:
-        conexion.close()
-
-
-tabla, multas_pendientes = _tabla()
+tabla, multas_pendientes = estadisticas.resumen_jugadores()
 
 if not tabla:
     st.info("Todavía no hay historial de partidos para armar la tabla.")

@@ -103,6 +103,28 @@ def listar_multas_multiples(partido_ids):
     return por_partido
 
 
+def listar_todas():
+    """Todas las multas de la historia del club (pagadas y pendientes) —
+    para exportar a Excel. Sin la imagen del comprobante (BLOB)."""
+    conexion = get_connection()
+    try:
+        filas = conexion.execute(
+            """
+            SELECT
+                multas.id, multas.tipo, multas.monto, multas.estado, multas.metodo_pago,
+                multas.fecha_creacion, multas.fecha_pago, multas.nota,
+                usuarios.nombre, jugadores.apodo, jugadores.apellidos
+            FROM multas
+            JOIN jugadores ON jugadores.id = multas.jugador_id
+            JOIN usuarios ON usuarios.id = jugadores.usuario_id
+            ORDER BY multas.fecha_creacion
+            """
+        ).fetchall()
+        return [dict(f) for f in filas]
+    finally:
+        conexion.close()
+
+
 def listar_todas_pendientes():
     """Todas las multas en estado 'debe' (sin comprobante en revisión, sin
     pagar), de cualquier partido, en una sola consulta — para el listado

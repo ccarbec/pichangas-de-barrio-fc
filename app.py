@@ -86,24 +86,26 @@ st.title("⚽ Pichangas de Barrio FC")
 if auth.es_admin():
     st.caption("Programa partidos, verifica pagos y controla a los jugadores del club.")
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.page_link("pages/1_Partidos.py", label="Partidos", icon="📅")
     col2.page_link("pages/2_Pagos.py", label="Pagos", icon="💸")
     col3.page_link("pages/3_Jugadores.py", label="Jugadores", icon="🧑‍🤝‍🧑")
     col4.page_link("pages/4_Enviar_WhatsApp.py", label="Enviar WhatsApp", icon="📨")
     col5.page_link("pages/5_Configuracion.py", label="Configuración", icon="⚙️")
     col6.page_link("pages/7_Tabla_del_Club.py", label="Tabla del Club", icon="🏆")
+    col7.page_link("pages/8_Dashboard.py", label="Dashboard", icon="📊")
 
     st.divider()
 
     proximos = partidos.listar_partidos(estado="programado")
     pendientes = pagos.listar_pagos_pendientes()
     activos = jugadores.listar_jugadores()
+    todos_registrados = jugadores.listar_jugadores(solo_activos=False)
 
     col_a, col_b, col_c = st.columns(3)
-    col_a.metric("Partidos programados", len(proximos))
-    col_b.metric("Pagos por verificar", len(pendientes))
-    col_c.metric("Jugadores activos", len(activos))
+    col_a.metric("👥 Jugadores activos", len(activos), help=f"{len(todos_registrados)} registrados en total")
+    col_b.metric("Partidos programados", len(proximos))
+    col_c.metric("Pagos por verificar", len(pendientes))
 
     jugador_propio = jugadores.obtener_jugador_por_usuario(usuario["id"])
     st.divider()

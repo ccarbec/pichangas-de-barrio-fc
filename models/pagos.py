@@ -159,6 +159,33 @@ def rechazar_pago(pago_id, verificado_por, nota=""):
         conexion.close()
 
 
+def listar_todos():
+    """Todos los pagos de la historia del club (verificados, pendientes,
+    rechazados) — para exportar a Excel. Sin la imagen del comprobante
+    (BLOB, no tiene sentido en una celda de Excel)."""
+    conexion = get_connection()
+    try:
+        filas = conexion.execute(
+            """
+            SELECT
+                pagos.id, pagos.monto, pagos.estado, pagos.metodo_pago,
+                pagos.fecha_pago, pagos.fecha_verificacion, pagos.nota,
+                usuarios.nombre, jugadores.apodo, jugadores.apellidos,
+                partidos.fecha AS partido_fecha, partidos.hora AS partido_hora,
+                partidos.cancha AS partido_cancha
+            FROM pagos
+            JOIN inscripciones ON inscripciones.id = pagos.inscripcion_id
+            JOIN jugadores ON jugadores.id = inscripciones.jugador_id
+            JOIN usuarios ON usuarios.id = jugadores.usuario_id
+            JOIN partidos ON partidos.id = inscripciones.partido_id
+            ORDER BY pagos.fecha_pago
+            """
+        ).fetchall()
+        return [dict(f) for f in filas]
+    finally:
+        conexion.close()
+
+
 def cuadre_multiples(partido_ids):
     """Como cuadre_partido, pero para varios partidos en una sola ida y
     vuelta a Turso (2 consultas agregadas en vez de 2 por cada partido
