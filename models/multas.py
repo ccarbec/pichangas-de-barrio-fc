@@ -42,6 +42,46 @@ def eliminar_multa_de_inscripcion(jugador_id, partido_id, tipo):
         conexion.close()
 
 
+def sincronizar_multas_asistencia(cambios, partido_id, monto_tardanza, monto_no_asistio):
+    """Como eliminar_multa_de_inscripcion + crear_multa combinados, pero
+    para todos los jugadores cuya asistencia cambió en una sola toma de
+    lista — 2 sentencias en vez de hasta 3 por cada jugador marcado.
+
+    cambios: lista de (jugador_id, nuevo_estado), estado en
+    {'llego', 'tardanza', 'no_llego', None}."""
+    if not cambios:
+        return
+    conexion = get_connection()
+    try:
+        jugador_ids = [jid for jid, _ in cambios]
+        placeholders = ",".join("?" * len(jugador_ids))
+        conexion.execute(
+            f"""
+            DELETE FROM multas
+            WHERE partido_id = ? AND tipo IN ('tardanza', 'no_asistio') AND estado != 'pagado'
+              AND jugador_id IN ({placeholders})
+            """,
+            [partido_id, *jugador_ids],
+        )
+
+        nuevas = [
+            (jid, partido_id, "tardanza" if estado == "tardanza" else "no_asistio",
+             monto_tardanza if estado == "tardanza" else monto_no_asistio)
+            for jid, estado in cambios
+            if estado in ("tardanza", "no_llego")
+        ]
+        if nuevas:
+            valores = ", ".join("(?, ?, ?, ?)" for _ in nuevas)
+            parametros = [valor for fila in nuevas for valor in fila]
+            conexion.execute(
+                f"INSERT INTO multas (jugador_id, partido_id, tipo, monto) VALUES {valores}",
+                parametros,
+            )
+        conexion.commit()
+    finally:
+        conexion.close()
+
+
 def tiene_multa_no_asistio_pendiente(jugador_id):
     conexion = get_connection()
     try:

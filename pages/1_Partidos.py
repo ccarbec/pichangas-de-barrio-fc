@@ -217,6 +217,43 @@ def _vista_admin(partido, jugadores_registrados, inscritos, multas_partido, cuad
             partidos.cambiar_estado(partido["id"], "cancelado")
             st.rerun()
 
+    if partido["estado"] == "programado" and confirmados_lista:
+        with st.expander("📋 Tomar asistencia (lista rápida)"):
+            lista_ordenada = sorted(
+                confirmados_lista, key=lambda i: ((i.get("apellidos") or "").lower(), (i.get("nombre") or "").lower())
+            )
+            with st.form(f"asistencia_lista_{partido['id']}"):
+                elegidas = {}
+                for i in lista_ordenada:
+                    actual = MAPA_ASISTENCIA_INVERSO.get(i["asistio"], "Sin marcar")
+                    elegidas[i["id"]] = st.radio(
+                        _nombre_completo(i), ETIQUETAS_ASISTENCIA,
+                        index=ETIQUETAS_ASISTENCIA.index(actual),
+                        key=f"lista_asis_{i['id']}", horizontal=True,
+                    )
+                guardar_lista = st.form_submit_button("💾 Guardar asistencia del equipo", type="primary")
+
+            if guardar_lista:
+                por_id = {i["id"]: i for i in lista_ordenada}
+                cambios_inscripcion = []
+                cambios_jugador = []
+                for inscripcion_id, etiqueta in elegidas.items():
+                    nuevo = MAPA_ASISTENCIA[etiqueta]
+                    if nuevo != por_id[inscripcion_id]["asistio"]:
+                        cambios_inscripcion.append((inscripcion_id, nuevo))
+                        cambios_jugador.append((por_id[inscripcion_id]["jugador_id"], nuevo))
+                if not cambios_inscripcion:
+                    st.info("No hubo cambios de asistencia.")
+                else:
+                    config = club_config.obtener_config()
+                    inscripciones.marcar_asistencia_multiple(cambios_inscripcion)
+                    multas.sincronizar_multas_asistencia(
+                        cambios_jugador, partido["id"],
+                        config["monto_multa_tardanza"], config["monto_multa_no_asistio"],
+                    )
+                    st.toast(f"Asistencia guardada para {len(cambios_inscripcion)} jugador(es).", icon="💾")
+                    st.rerun()
+
     with st.expander("Ver inscritos"):
         ids_ya_inscritos = {i["jugador_id"] for i in inscritos}
         disponibles = [j for j in jugadores_registrados if j["id"] not in ids_ya_inscritos]

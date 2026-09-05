@@ -267,3 +267,26 @@ def marcar_asistencia(inscripcion_id, estado):
         conexion.commit()
     finally:
         conexion.close()
+
+
+def marcar_asistencia_multiple(cambios):
+    """Como marcar_asistencia, pero para toda la lista de un partido en una
+    sola sentencia — la toma de lista rápida guarda el equipo completo con
+    un solo botón en vez de una ida y vuelta a Turso por cada jugador.
+
+    cambios: lista de (inscripcion_id, estado)."""
+    if not cambios:
+        return
+    conexion = get_connection()
+    try:
+        casos = " ".join("WHEN ? THEN ?" for _ in cambios)
+        ids = [inscripcion_id for inscripcion_id, _ in cambios]
+        placeholders = ",".join("?" * len(ids))
+        parametros = [valor for par in cambios for valor in par] + ids
+        conexion.execute(
+            f"UPDATE inscripciones SET asistio = CASE id {casos} END WHERE id IN ({placeholders})",
+            parametros,
+        )
+        conexion.commit()
+    finally:
+        conexion.close()
