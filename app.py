@@ -86,7 +86,7 @@ st.title("⚽ Pichangas de Barrio FC")
 if auth.es_admin():
     st.caption("Programa partidos, verifica pagos y controla a los jugadores del club.")
 
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     col1.page_link("pages/1_Partidos.py", label="Partidos", icon="📅")
     col2.page_link("pages/2_Pagos.py", label="Pagos", icon="💸")
     col3.page_link("pages/3_Jugadores.py", label="Jugadores", icon="🧑‍🤝‍🧑")
@@ -94,6 +94,7 @@ if auth.es_admin():
     col5.page_link("pages/5_Configuracion.py", label="Configuración", icon="⚙️")
     col6.page_link("pages/7_Tabla_del_Club.py", label="Tabla del Club", icon="🏆")
     col7.page_link("pages/8_Dashboard.py", label="Dashboard", icon="📊")
+    col8.page_link("pages/9_Perfiles.py", label="Perfiles", icon="🖼️")
 
     st.divider()
 
@@ -119,10 +120,11 @@ if auth.es_admin():
 else:
     st.caption("Confirma tu asistencia a la próxima pichanga y sube tu comprobante de pago.")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.page_link("pages/1_Partidos.py", label="Ver partidos →", icon="📅")
     col2.page_link("pages/6_Mi_Perfil.py", label="Mi perfil →", icon="👤")
     col3.page_link("pages/7_Tabla_del_Club.py", label="Tabla del Club →", icon="🏆")
+    col4.page_link("pages/9_Perfiles.py", label="Perfiles del club →", icon="🖼️")
 
     jugador = jugadores.obtener_jugador_por_usuario(usuario["id"])
     st.divider()

@@ -156,17 +156,22 @@ with tab_perfiles:
             st.session_state["perfil_selectbox"] = etiquetas_perfil[indice]
 
         col_prev, col_sel, col_next = st.columns([1, 3, 1])
-        if col_prev.button("⬅️ Anterior", disabled=indice == 0):
+        # Los dos botones se crean (y se leen) ANTES que el selectbox:
+        # Streamlit no deja tocar el session_state de un widget con key
+        # después de instanciarlo en la misma corrida.
+        anterior_clic = col_prev.button("⬅️ Anterior", disabled=indice == 0)
+        siguiente_clic = col_next.button("Siguiente ➡️", disabled=indice == len(lista_perfil) - 1)
+        if anterior_clic:
             st.session_state["perfil_indice"] = indice - 1
             st.session_state["perfil_selectbox"] = etiquetas_perfil[indice - 1]
+            st.rerun()
+        if siguiente_clic:
+            st.session_state["perfil_indice"] = indice + 1
+            st.session_state["perfil_selectbox"] = etiquetas_perfil[indice + 1]
             st.rerun()
         seleccion_perfil = col_sel.selectbox("Jugador", etiquetas_perfil, key="perfil_selectbox")
         indice = etiquetas_perfil.index(seleccion_perfil)
         st.session_state["perfil_indice"] = indice
-        if col_next.button("Siguiente ➡️", disabled=indice == len(lista_perfil) - 1):
-            st.session_state["perfil_indice"] = indice + 1
-            st.session_state["perfil_selectbox"] = etiquetas_perfil[indice + 1]
-            st.rerun()
 
         jugador_perfil = lista_perfil[indice]
         st.caption(f"{indice + 1} de {len(lista_perfil)}")

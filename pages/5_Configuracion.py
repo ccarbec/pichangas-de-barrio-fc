@@ -67,17 +67,22 @@ with tab_estadios:
             st.session_state["estadio_selectbox"] = nombres_estadio[indice_e]
 
         col_prev_e, col_sel_e, col_next_e = st.columns([1, 3, 1])
-        if col_prev_e.button("⬅️ Anterior", disabled=indice_e == 0, key="estadio_prev"):
+        # Los dos botones se crean (y se leen) ANTES que el selectbox:
+        # Streamlit no deja tocar el session_state de un widget con key
+        # después de instanciarlo en la misma corrida.
+        anterior_clic_e = col_prev_e.button("⬅️ Anterior", disabled=indice_e == 0, key="estadio_prev")
+        siguiente_clic_e = col_next_e.button("Siguiente ➡️", disabled=indice_e == len(lista_estadios) - 1, key="estadio_next")
+        if anterior_clic_e:
             st.session_state["estadio_indice"] = indice_e - 1
             st.session_state["estadio_selectbox"] = nombres_estadio[indice_e - 1]
+            st.rerun()
+        if siguiente_clic_e:
+            st.session_state["estadio_indice"] = indice_e + 1
+            st.session_state["estadio_selectbox"] = nombres_estadio[indice_e + 1]
             st.rerun()
         seleccion_estadio = col_sel_e.selectbox("Zona / estadio", nombres_estadio, key="estadio_selectbox")
         indice_e = nombres_estadio.index(seleccion_estadio)
         st.session_state["estadio_indice"] = indice_e
-        if col_next_e.button("Siguiente ➡️", disabled=indice_e == len(lista_estadios) - 1, key="estadio_next"):
-            st.session_state["estadio_indice"] = indice_e + 1
-            st.session_state["estadio_selectbox"] = nombres_estadio[indice_e + 1]
-            st.rerun()
         st.caption(f"{indice_e + 1} de {len(lista_estadios)}")
 
         estadio = lista_estadios[indice_e]
