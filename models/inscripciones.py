@@ -119,39 +119,53 @@ def inscribir_jugador(partido_id, jugador_id, cupo_max):
 def cancelar_inscripcion(inscripcion_id):
     """Cancela la inscripción y, si tenía cupo confirmado, sube al primero
     de la lista de espera. Devuelve el dict (nombre/apodo/telefono) del
-    jugador recién promovido, o None si no había nadie esperando."""
+    jugador recién promovido, o None si no había nadie esperando.
+
+    La cancelación + promoción va en una transacción de solo 2 sentencias
+    (antes eran hasta 4): una transacción interactiva larga corre el
+    riesgo de que Turso la cancele por "stream idle" si tarda en
+    responder entre sentencias (visto en producción: ValueError
+    SQLITE_BUSY). El nombre del promovido para el toast se busca aparte,
+    ya con todo confirmado — si esa lectura falla no se pierde nada."""
     inscripcion = obtener_inscripcion_por_id(inscripcion_id)
     conexion = get_connection()
     try:
         conexion.execute(
             "UPDATE inscripciones SET estado = 'cancelado' WHERE id = ?", (inscripcion_id,)
         )
-        promovido = None
+        promovido_jugador_id = None
         if inscripcion["estado"] == "confirmado":
-            siguiente = conexion.execute(
+            fila = conexion.execute(
                 """
-                SELECT id, jugador_id FROM inscripciones
-                WHERE partido_id = ? AND estado = 'lista_espera'
-                ORDER BY fecha_inscripcion LIMIT 1
+                UPDATE inscripciones SET estado = 'confirmado'
+                WHERE id = (
+                    SELECT id FROM inscripciones
+                    WHERE partido_id = ? AND estado = 'lista_espera'
+                    ORDER BY fecha_inscripcion LIMIT 1
+                )
+                RETURNING jugador_id
                 """,
                 (inscripcion["partido_id"],),
             ).fetchone()
-            if siguiente:
-                conexion.execute(
-                    "UPDATE inscripciones SET estado = 'confirmado' WHERE id = ?",
-                    (siguiente["id"],),
-                )
-                fila = conexion.execute(
-                    """
-                    SELECT usuarios.nombre, usuarios.telefono, jugadores.apodo
-                    FROM jugadores JOIN usuarios ON usuarios.id = jugadores.usuario_id
-                    WHERE jugadores.id = ?
-                    """,
-                    (siguiente["jugador_id"],),
-                ).fetchone()
-                promovido = dict(fila) if fila else None
+            if fila:
+                promovido_jugador_id = fila["jugador_id"]
         conexion.commit()
-        return promovido
+    finally:
+        conexion.close()
+
+    if promovido_jugador_id is None:
+        return None
+    conexion = get_connection()
+    try:
+        fila = conexion.execute(
+            """
+            SELECT usuarios.nombre, usuarios.telefono, jugadores.apodo
+            FROM jugadores JOIN usuarios ON usuarios.id = jugadores.usuario_id
+            WHERE jugadores.id = ?
+            """,
+            (promovido_jugador_id,),
+        ).fetchone()
+        return dict(fila) if fila else None
     finally:
         conexion.close()
 
