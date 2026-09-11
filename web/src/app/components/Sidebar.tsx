@@ -10,6 +10,7 @@ import {
   Trophy,
   Settings,
   UserCircle,
+  Images,
   X,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ const ITEMS_ADMIN = [
   { href: "/dashboard/pagos", label: "Pagos", icon: Wallet },
   { href: "/dashboard/miembros", label: "Gestión Miembros", icon: Users },
   { href: "/dashboard/tabla-club", label: "Tabla del Club", icon: Trophy },
+  { href: "/dashboard/galeria", label: "Galería", icon: Images },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
   { href: "/dashboard/perfil", label: "Mi Perfil", icon: UserCircle },
 ];
@@ -27,6 +29,7 @@ const ITEMS_JUGADOR = [
   { href: "/dashboard", label: "Centro de Comando", icon: LayoutDashboard },
   { href: "/dashboard/partidos", label: "Partidos", icon: ClipboardList },
   { href: "/dashboard/tabla-club", label: "Tabla del Club", icon: Trophy },
+  { href: "/dashboard/galeria", label: "Galería", icon: Images },
   { href: "/dashboard/perfil", label: "Mi Perfil", icon: UserCircle },
 ];
 

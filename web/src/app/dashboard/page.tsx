@@ -1,10 +1,23 @@
+import Link from "next/link";
+import { ClipboardList, Users, Settings, Images } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { obtenerUsuarioActual } from "@/lib/session";
 import { MetricCard } from "../components/MetricCard";
 import { Badge } from "../components/Badge";
 import { BarList } from "../components/BarList";
 import { nombreCompleto } from "@/lib/estilos";
 
+const ACCESOS_ADMIN = [
+  { href: "/dashboard/partidos", label: "Partidos", icon: ClipboardList },
+  { href: "/dashboard/miembros", label: "Gestión Miembros", icon: Users },
+  { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
+  { href: "/dashboard/galeria", label: "Galería", icon: Images },
+];
+
 export default async function DashboardPage() {
+  const usuario = await obtenerUsuarioActual();
+  const esAdmin = usuario?.rol === "admin";
+
   const [jugadoresActivos, totalRegistrados, partidosProgramados, pagosPendientes, ultimosJugadores, jugadoresConAsistencia] =
     await Promise.all([
       prisma.jugador.count({ where: { estado: "activo" } }),
@@ -43,6 +56,21 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold">Centro de Comando</h1>
         <p className="text-sm text-[var(--muted)]">Resumen del club en vivo.</p>
       </div>
+
+      {esAdmin && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {ACCESOS_ADMIN.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex flex-col items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-center text-sm font-medium transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface-hover)]"
+            >
+              <Icon size={22} className="text-[var(--accent)]" />
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard

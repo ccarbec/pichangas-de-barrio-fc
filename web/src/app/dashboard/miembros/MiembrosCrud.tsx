@@ -33,8 +33,19 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
 
   const seleccionado = jugadores.find((j) => j.id === seleccionId) ?? null;
+
+  const terminoBusqueda = busqueda.trim().toLowerCase();
+  const jugadoresFiltrados = terminoBusqueda
+    ? jugadores.filter((j) =>
+        [j.nombre, j.apellidos, j.apodo ?? "", j.telefono]
+          .join(" ")
+          .toLowerCase()
+          .includes(terminoBusqueda)
+      )
+    : jugadores;
 
   function run(fn: () => Promise<unknown>) {
     startTransition(async () => {
@@ -103,17 +114,32 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
         </form>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.4fr]">
-          <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
-                  <th className="p-3">Jugador</th>
-                  <th className="p-3">Rol</th>
-                  <th className="p-3">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jugadores.map((j) => (
+          <div className="flex flex-col gap-3">
+            <input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="🔍 Buscar por nombre, apodo o celular…"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            />
+            <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
+                    <th className="p-3">Jugador</th>
+                    <th className="p-3">Rol</th>
+                    <th className="p-3">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jugadoresFiltrados.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="p-3 text-center text-[var(--muted)]">
+                        Ningún jugador coincide con &quot;{busqueda}&quot;.
+                      </td>
+                    </tr>
+                  )}
+                  {jugadoresFiltrados.map((j) => (
                   <tr
                     key={j.id}
                     onClick={() => setSeleccionId(j.id)}
@@ -127,9 +153,10 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                       <Badge variant={j.estado === "activo" ? "active" : "danger"}>{j.estado.toUpperCase()}</Badge>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {seleccionado && (

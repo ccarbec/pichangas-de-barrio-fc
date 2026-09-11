@@ -22,8 +22,9 @@ model Usuario {
   estado        String   @default("activo")
   fechaCreacion String   @default("") @map("fecha_creacion")
 
-  jugador  Jugador?
-  sesiones Sesion[]
+  jugador       Jugador?
+  sesiones      Sesion[]
+  galeriaItems  GaleriaItem[]
 
   @@map("usuarios")
 }
@@ -73,6 +74,7 @@ model Partido {
 
   inscripciones Inscripcion[]
   multas        Multa[]
+  galeriaItems  GaleriaItem[]
 
   @@map("partidos")
 }
@@ -154,6 +156,22 @@ model Estadio {
   fechaCreacion   String  @default("") @map("fecha_creacion")
 
   @@map("estadios")
+}
+
+model GaleriaItem {
+  id            Int      @id @default(autoincrement())
+  partidoId     Int?     @map("partido_id")
+  subidoPorId   Int      @map("subido_por_id")
+  tipo          String
+  archivo       Bytes
+  mime          String
+  descripcion   String?
+  fechaSubida   String   @default("") @map("fecha_subida")
+
+  partido   Partido? @relation(fields: [partidoId], references: [id])
+  subidoPor Usuario  @relation(fields: [subidoPorId], references: [id])
+
+  @@map("galeria_items")
 }
 
 model EnvioRecordatorio {
