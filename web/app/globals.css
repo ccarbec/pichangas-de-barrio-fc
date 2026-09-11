@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b1220;
+  --surface: #141d2f;
+  --surface-hover: #1b263d;
+  --border: #253046;
+  --foreground: #e6ebf5;
+  --muted: #8b96ac;
+  --accent: #b6f545;
+  --accent-foreground: #0b1220;
+  --badge-active-bg: #14532d;
+  --badge-active-fg: #86efac;
+  --badge-role-bg: #1e3a5f;
+  --badge-role-fg: #7dd3fc;
+  --danger: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: radial-gradient(circle at top left, #14203a 0%, var(--background) 55%);
+  color: var(--foreground);
+}
