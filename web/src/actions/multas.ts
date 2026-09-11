@@ -1,0 +1,65 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin, requireLogin } from "@/lib/require-auth";
+
+const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
+
+export async function subirComprobanteMulta(formData: FormData) {
+  await requireLogin();
+  const multaId = Number(formData.get("multaId"));
+  const archivo = formData.get("comprobante") as File | null;
+
+  if (!archivo || archivo.size === 0) throw new Error("Sube un comprobante.");
+  if (archivo.size > MAX_BYTES_IMAGEN) {
+    throw new Error(`La imagen pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es 5 MB.`);
+  }
+  const bytes = Buffer.from(await archivo.arrayBuffer());
+
+  await prisma.multa.update({
+    where: { id: multaId },
+    data: {
+      estado: "pendiente_verificacion",
+      comprobanteImg: bytes,
+      comprobanteMime: archivo.type,
+      metodoPago: "yape",
+      nota: null,
+    },
+  });
+  revalidatePath("/dashboard/partidos");
+}
+
+export async function marcarMultaPagadaEfectivo(multaId: number) {
+  const admin = await requireAdmin();
+  await prisma.multa.update({
+    where: { id: multaId },
+    data: {
+      estado: "pagado",
+      metodoPago: "efectivo",
+      verificadoPor: admin.id,
+      fechaPago: new Date().toISOString(),
+      nota: null,
+    },
+  });
+  revalidatePath("/dashboard/partidos");
+  revalidatePath("/dashboard/pagos");
+}
+
+export async function verificarMulta(multaId: number) {
+  const admin = await requireAdmin();
+  await prisma.multa.update({
+    where: { id: multaId },
+    data: { estado: "pagado", verificadoPor: admin.id, fechaPago: new Date().toISOString(), nota: null },
+  });
+  revalidatePath("/dashboard/pagos");
+}
+
+export async function rechazarMulta(multaId: number, nota: string) {
+  const admin = await requireAdmin();
+  await prisma.multa.update({
+    where: { id: multaId },
+    data: { estado: "debe", verificadoPor: admin.id, nota: nota.trim() },
+  });
+  revalidatePath("/dashboard/pagos");
+}

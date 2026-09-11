@@ -14,9 +14,9 @@ import {
 
 const ITEMS = [
   { href: "/dashboard", label: "Centro de Comando", icon: LayoutDashboard },
+  { href: "/dashboard/partidos", label: "Partidos", icon: ClipboardList },
   { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
   { href: "/dashboard/eventos", label: "Eventos", icon: CalendarDays },
-  { href: "/dashboard/convocatorias", label: "Gestión Convocatorias", icon: ClipboardList },
   { href: "/dashboard/galerias", label: "Galerías", icon: Images },
   { href: "/dashboard/miembros", label: "Gestión Miembros", icon: Users },
   { href: "/dashboard/perfil", label: "Mi Perfil", icon: UserCircle },

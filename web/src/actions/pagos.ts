@@ -1,0 +1,103 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin, requireLogin } from "@/lib/require-auth";
+
+const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
+
+export async function registrarPago(formData: FormData) {
+  await requireLogin();
+
+  const inscripcionId = Number(formData.get("inscripcionId"));
+  const monto = Number(formData.get("monto"));
+  const archivo = formData.get("comprobante") as File | null;
+
+  if (!archivo || archivo.size === 0) throw new Error("Sube un comprobante.");
+  if (archivo.size > MAX_BYTES_IMAGEN) {
+    throw new Error(
+      `La imagen pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es 5 MB.`
+    );
+  }
+
+  const bytes = Buffer.from(await archivo.arrayBuffer());
+  const existente = await prisma.pago.findUnique({ where: { inscripcionId } });
+
+  if (existente) {
+    await prisma.pago.update({
+      where: { id: existente.id },
+      data: {
+        monto,
+        comprobanteImg: bytes,
+        comprobanteMime: archivo.type,
+        estado: "pendiente",
+        fechaPago: new Date().toISOString(),
+        verificadoPor: null,
+        fechaVerificacion: null,
+        nota: null,
+      },
+    });
+  } else {
+    await prisma.pago.create({
+      data: {
+        inscripcionId,
+        monto,
+        comprobanteImg: bytes,
+        comprobanteMime: archivo.type,
+        fechaPago: new Date().toISOString(),
+      },
+    });
+  }
+
+  revalidatePath("/dashboard/partidos");
+}
+
+export async function marcarPagoManual(inscripcionId: number, monto: number) {
+  const admin = await requireAdmin();
+  const existente = await prisma.pago.findUnique({ where: { inscripcionId } });
+
+  if (existente) {
+    await prisma.pago.update({
+      where: { id: existente.id },
+      data: {
+        monto,
+        estado: "verificado",
+        metodoPago: "efectivo",
+        verificadoPor: admin.id,
+        fechaVerificacion: new Date().toISOString(),
+        nota: null,
+      },
+    });
+  } else {
+    await prisma.pago.create({
+      data: {
+        inscripcionId,
+        monto,
+        estado: "verificado",
+        metodoPago: "efectivo",
+        verificadoPor: admin.id,
+        fechaVerificacion: new Date().toISOString(),
+      },
+    });
+  }
+
+  revalidatePath("/dashboard/partidos");
+}
+
+export async function verificarPago(pagoId: number) {
+  const admin = await requireAdmin();
+  await prisma.pago.update({
+    where: { id: pagoId },
+    data: { estado: "verificado", verificadoPor: admin.id, fechaVerificacion: new Date().toISOString(), nota: null },
+  });
+  revalidatePath("/dashboard/pagos");
+}
+
+export async function rechazarPago(pagoId: number, nota: string) {
+  const admin = await requireAdmin();
+  await prisma.pago.update({
+    where: { id: pagoId },
+    data: { estado: "rechazado", verificadoPor: admin.id, nota: nota.trim() },
+  });
+  revalidatePath("/dashboard/pagos");
+}
