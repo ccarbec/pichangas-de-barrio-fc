@@ -1,4 +1,4 @@
-import { loginDemo } from "./actions";
+import { login } from "./actions";
 
 export default async function LoginPage({
   searchParams,
@@ -15,12 +15,12 @@ export default async function LoginPage({
           <p className="text-sm text-[var(--muted)]">Prueba de rediseño — panel del club</p>
         </div>
 
-        <form action={loginDemo} className="flex flex-col gap-4">
+        <form action={login} className="flex flex-col gap-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-[var(--muted)]">Celular</label>
             <input
               name="celular"
-              defaultValue="999999999"
+              placeholder="999999999"
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             />
           </div>
@@ -29,7 +29,6 @@ export default async function LoginPage({
             <input
               name="password"
               type="password"
-              defaultValue="demo123"
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             />
           </div>
@@ -47,7 +46,7 @@ export default async function LoginPage({
         </form>
 
         <p className="mt-6 text-center text-xs text-[var(--muted)]">
-          Demo: 999999999 / demo123 (precargado)
+          Datos de prueba: admin 999999999 / demo123 · jugador 998880000 / jugador123
         </p>
       </div>
     </main>

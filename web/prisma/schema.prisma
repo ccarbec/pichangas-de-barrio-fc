@@ -1,0 +1,172 @@
+// Prisma schema — refleja 1:1 las tablas que ya existen en Turso
+// (ver database/connection.py en la raíz del repo Python). Mismos nombres
+// de tabla/columna (via @@map/@map) para que conectar a la base real el
+// día del lanzamiento sea solo cambiar DATASOURCE_URL, sin migración.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  nombre        String
+  telefono      String   @unique
+  passwordHash  String   @map("password_hash")
+  salt          String
+  rol           String   @default("jugador")
+  estado        String   @default("activo")
+  fechaCreacion String   @default("") @map("fecha_creacion")
+
+  jugador  Jugador?
+  sesiones Sesion[]
+
+  @@map("usuarios")
+}
+
+model Sesion {
+  token     String   @id
+  usuarioId Int      @map("usuario_id")
+  creadoEn  String   @default("") @map("creado_en")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("sesiones")
+}
+
+model Jugador {
+  id             Int     @id @default(autoincrement())
+  usuarioId      Int     @unique @map("usuario_id")
+  apodo          String?
+  apellidos      String  @default("")
+  posicion       String?
+  equipoHincha   String  @default("") @map("equipo_hincha")
+  camiseta       String  @default("")
+  fotoImg        Bytes?  @map("foto_img")
+  fotoMime       String? @map("foto_mime")
+  resena         String  @default("")
+  estado         String  @default("activo")
+  fechaRegistro  String  @default("") @map("fecha_registro")
+
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id])
+  inscripciones Inscripcion[]
+  multas        Multa[]
+
+  @@map("jugadores")
+}
+
+model Partido {
+  id               Int      @id @default(autoincrement())
+  fecha            String
+  hora             String
+  cancha           String
+  cupoMax          Int      @map("cupo_max")
+  costoCancha      Float    @default(0) @map("costo_cancha")
+  costoPorJugador  Float    @default(0) @map("costo_por_jugador")
+  notas            String?
+  estado           String   @default("programado")
+  fechaCreacion    String   @default("") @map("fecha_creacion")
+
+  inscripciones Inscripcion[]
+  multas        Multa[]
+
+  @@map("partidos")
+}
+
+model Inscripcion {
+  id               Int      @id @default(autoincrement())
+  partidoId        Int      @map("partido_id")
+  jugadorId        Int      @map("jugador_id")
+  estado           String   @default("confirmado")
+  // Guardado como texto: 'llego' | 'tardanza' | 'no_llego' | null.
+  asistio          String?
+  fechaInscripcion String   @default("") @map("fecha_inscripcion")
+
+  partido Partido @relation(fields: [partidoId], references: [id])
+  jugador Jugador @relation(fields: [jugadorId], references: [id])
+  pago    Pago?
+
+  @@unique([partidoId, jugadorId])
+  @@map("inscripciones")
+}
+
+model Pago {
+  id                Int      @id @default(autoincrement())
+  inscripcionId     Int      @unique @map("inscripcion_id")
+  monto             Float
+  comprobanteImg    Bytes?   @map("comprobante_img")
+  comprobanteMime   String?  @map("comprobante_mime")
+  estado            String   @default("pendiente")
+  metodoPago        String?  @default("yape") @map("metodo_pago")
+  fechaPago         String   @default("") @map("fecha_pago")
+  verificadoPor     Int?     @map("verificado_por")
+  fechaVerificacion String?  @map("fecha_verificacion")
+  nota              String?
+
+  inscripcion Inscripcion @relation(fields: [inscripcionId], references: [id])
+
+  @@map("pagos")
+}
+
+model ClubConfig {
+  id                   Int    @id @default(1)
+  nombreYape           String? @map("nombre_yape")
+  telefonoYape         String? @map("telefono_yape")
+  montoMultaTardanza   Float?  @default(5.0) @map("monto_multa_tardanza")
+  montoMultaNoAsistio  Float?  @default(10.0) @map("monto_multa_no_asistio")
+
+  @@map("club_config")
+}
+
+model Multa {
+  id                Int      @id @default(autoincrement())
+  jugadorId         Int      @map("jugador_id")
+  partidoId         Int?     @map("partido_id")
+  tipo              String
+  monto             Float
+  estado            String   @default("debe")
+  comprobanteImg    Bytes?   @map("comprobante_img")
+  comprobanteMime   String?  @map("comprobante_mime")
+  metodoPago        String?  @map("metodo_pago")
+  verificadoPor     Int?     @map("verificado_por")
+  fechaCreacion     String   @default("") @map("fecha_creacion")
+  fechaPago         String?  @map("fecha_pago")
+  nota              String?
+
+  jugador Jugador  @relation(fields: [jugadorId], references: [id])
+  partido Partido? @relation(fields: [partidoId], references: [id])
+
+  @@map("multas")
+}
+
+model Estadio {
+  id              Int     @id @default(autoincrement())
+  nombre          String
+  costoCancha     Float   @default(0) @map("costo_cancha")
+  costoPorJugador Float   @default(0) @map("costo_por_jugador")
+  fotoImg         Bytes?  @map("foto_img")
+  fotoMime        String? @map("foto_mime")
+  estado          String  @default("activo")
+  fechaCreacion   String  @default("") @map("fecha_creacion")
+
+  @@map("estadios")
+}
+
+model EnvioRecordatorio {
+  id            Int    @id @default(autoincrement())
+  jugadorNombre String @map("jugador_nombre")
+  telefono      String
+  partidoFecha  String @map("partido_fecha")
+  partidoHora   String @map("partido_hora")
+  tipo          String
+  mensaje       String
+  resultado     String
+  detalleError  String? @map("detalle_error")
+  fechaHora     String  @default("") @map("fecha_hora")
+
+  @@map("envios_recordatorios")
+}
