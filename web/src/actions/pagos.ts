@@ -93,6 +93,24 @@ export async function verificarPago(pagoId: number) {
   revalidatePath("/dashboard/pagos");
 }
 
+export async function obtenerCuadre(partidoId: number) {
+  await requireAdmin();
+  const [recaudado, pendiente] = await Promise.all([
+    prisma.pago.aggregate({
+      _sum: { monto: true },
+      where: { estado: "verificado", inscripcion: { partidoId } },
+    }),
+    prisma.pago.aggregate({
+      _sum: { monto: true },
+      where: { estado: "pendiente", inscripcion: { partidoId } },
+    }),
+  ]);
+  return {
+    recaudado: recaudado._sum.monto ?? 0,
+    pendiente: pendiente._sum.monto ?? 0,
+  };
+}
+
 export async function rechazarPago(pagoId: number, nota: string) {
   const admin = await requireAdmin();
   await prisma.pago.update({

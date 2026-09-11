@@ -27,7 +27,7 @@ async function main() {
     },
   });
   await prisma.jugador.create({
-    data: { usuarioId: admin.id, apodo: "Marco", posicion: "Medio", apellidos: "" },
+    data: { usuarioId: admin.id, apodo: "Marco", posicion: "Mediocampo", apellidos: "" },
   });
 
   const nombres = [
