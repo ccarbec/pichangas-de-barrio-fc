@@ -32,13 +32,13 @@ export function ConfiguracionTabs({ estadios, config }: { estadios: Estadio[]; c
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setTab("estadios")}
-            className={`rounded-lg px-3 py-1.5 text-sm ${tab === "estadios" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)]"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${tab === "estadios" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"}`}
           >
             🏟️ Zonas y estadios
           </button>
           <button
             onClick={() => setTab("yape")}
-            className={`rounded-lg px-3 py-1.5 text-sm ${tab === "yape" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)]"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${tab === "yape" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"}`}
           >
             💰 Yape y multas
           </button>
@@ -85,7 +85,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
           <label className="mb-1 block text-xs text-[var(--muted)]">Costo por jugador (S/)</label>
           <input name="costoPorJugador" type="number" step="0.5" min={0} defaultValue={10} required className={inputClass} />
         </div>
-        <button type="submit" className="col-span-full self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]">
+        <button type="submit" className="col-span-full self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90">
           ➕ Agregar zona
         </button>
       </form>
@@ -130,7 +130,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
               <form action={(fd) => run(() => subirFotoEstadio(fd))} className="flex items-center gap-2">
                 <input type="hidden" name="estadioId" value={seleccionado.id} />
                 <input type="file" name="foto" accept="image/png,image/jpeg" className="text-xs" />
-                <button type="submit" className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">
+                <button type="submit" className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs transition-colors hover:border-[var(--accent)]">
                   Subir foto
                 </button>
               </form>
@@ -155,7 +155,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
                 <input name="costoPorJugador" type="number" step="0.5" defaultValue={seleccionado.costoPorJugador} className={inputClass} />
               </div>
               <div className="col-span-full flex items-center gap-2">
-                <button type="submit" disabled={pending} className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]">
+                <button type="submit" disabled={pending} className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">
                   💾 Guardar
                 </button>
                 {seleccionado.estado === "activo" ? (
@@ -163,7 +163,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => cambiarEstadoEstadio(seleccionado.id, false))}
-                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
+                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                   >
                     Desactivar
                   </button>
@@ -172,7 +172,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => cambiarEstadoEstadio(seleccionado.id, true))}
-                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
+                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                   >
                     Reactivar
                   </button>
@@ -210,7 +210,7 @@ function YapeTab({ config }: { config: Config }) {
         <label className="mb-1 block text-xs text-[var(--muted)]">Multa por no asistir (S/)</label>
         <input name="montoMultaNoAsistio" type="number" step="0.5" defaultValue={config.montoMultaNoAsistio} className={inputClass} />
       </div>
-      <button type="submit" disabled={pending} className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]">
+      <button type="submit" disabled={pending} className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">
         💾 Guardar configuración
       </button>
     </form>

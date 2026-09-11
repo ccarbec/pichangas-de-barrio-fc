@@ -81,7 +81,7 @@ export function PerfilForm({ jugador }: { jugador: Jugador }) {
         <button
           type="submit"
           disabled={pending}
-          className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]"
+          className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
         >
           💾 Guardar cambios
         </button>

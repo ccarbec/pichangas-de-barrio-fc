@@ -42,7 +42,7 @@ export function ActivarPerfilForm({ usuarioId }: { usuarioId: number }) {
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]"
+        className="self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
       >
         🎽 Activar mi perfil de jugador
       </button>

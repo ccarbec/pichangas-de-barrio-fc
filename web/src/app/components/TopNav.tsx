@@ -9,7 +9,7 @@ export function TopNav({ nombre, onAbrirMenu }: { nombre: string; onAbrirMenu: (
 
   return (
     <header className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)]/40 px-4 py-3 sm:px-6">
-      <button onClick={onAbrirMenu} className="text-[var(--muted)] hover:text-[var(--foreground)] md:hidden">
+      <button onClick={onAbrirMenu} className="text-[var(--muted)] transition-colors hover:text-[var(--foreground)] md:hidden">
         <Menu size={22} />
       </button>
       <span className="hidden text-sm font-medium text-[var(--muted)] md:block" />
@@ -29,7 +29,7 @@ export function TopNav({ nombre, onAbrirMenu }: { nombre: string; onAbrirMenu: (
               <form action={logout}>
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
                 >
                   <LogOut size={16} /> Cerrar sesión
                 </button>

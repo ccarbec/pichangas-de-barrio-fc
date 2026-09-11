@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { nombreCompleto, emojiPosicion } from "@/lib/estilos";
+import { EmptyState } from "../../components/EmptyState";
 
 export default async function TablaClubPage() {
   const jugadores = await prisma.jugador.findMany({
@@ -32,7 +33,7 @@ export default async function TablaClubPage() {
       </div>
 
       {tabla.length === 0 ? (
-        <p className="text-sm text-[var(--muted)]">Todavía no hay historial de partidos.</p>
+        <EmptyState icon="🏆" texto="Todavía no hay historial de partidos." />
       ) : (
         <>
           {top3.length > 0 && (

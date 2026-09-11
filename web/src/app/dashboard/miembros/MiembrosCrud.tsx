@@ -59,13 +59,13 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
         <div className="flex gap-2">
           <button
             onClick={() => setTab("lista")}
-            className={`rounded-lg px-3 py-1.5 text-sm ${tab === "lista" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)]"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${tab === "lista" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"}`}
           >
             Lista
           </button>
           <button
             onClick={() => setTab("agregar")}
-            className={`rounded-lg px-3 py-1.5 text-sm ${tab === "agregar" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)]"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${tab === "agregar" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"}`}
           >
             ➕ Agregar
           </button>
@@ -97,7 +97,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
           <Campo label="Contraseña inicial"><input name="password" type="password" required className={inputClass} /></Campo>
           <Campo label="Hincha de qué equipo"><input name="equipoHincha" className={inputClass} /></Campo>
           <Campo label="Camiseta"><input name="camiseta" className={inputClass} /></Campo>
-          <button type="submit" className="col-span-full mt-2 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]">
+          <button type="submit" className="col-span-full mt-2 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90">
             Guardar jugador
           </button>
         </form>
@@ -147,7 +147,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                 >
                   <input type="hidden" name="jugadorId" value={seleccionado.id} />
                   <input type="file" name="foto" accept="image/png,image/jpeg" className="text-xs" />
-                  <button type="submit" className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">
+                  <button type="submit" className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs transition-colors hover:border-[var(--accent)]">
                     Subir foto
                   </button>
                 </form>
@@ -181,7 +181,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                 <Campo label="Nueva contraseña (opcional)"><input name="nuevaPassword" type="password" className={inputClass} /></Campo>
 
                 <div className="col-span-full flex items-center gap-2">
-                  <button type="submit" disabled={pending} className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)]">
+                  <button type="submit" disabled={pending} className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">
                     💾 Guardar cambios
                   </button>
                   {seleccionado.estado === "activo" ? (
@@ -189,7 +189,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                       type="button"
                       disabled={pending}
                       onClick={() => run(() => cambiarEstadoJugador(seleccionado.id, false))}
-                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
+                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                     >
                       🚫 Inactivar
                     </button>
@@ -198,7 +198,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                       type="button"
                       disabled={pending}
                       onClick={() => run(() => cambiarEstadoJugador(seleccionado.id, true))}
-                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
+                      className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                     >
                       ♻️ Reactivar
                     </button>

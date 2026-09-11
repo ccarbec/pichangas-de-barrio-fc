@@ -119,14 +119,14 @@ export function PartidoAdmin({
             <button
               disabled={pending || (faltanPago > 0 && !autorizarCierre)}
               onClick={() => run(() => cambiarEstadoPartido(partido.id, "jugado"))}
-              className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] disabled:opacity-40"
+              className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-40 disabled:hover:opacity-40"
             >
               ✅ Cerrar (jugado)
             </button>
             <button
               disabled={pending}
               onClick={() => run(() => cambiarEstadoPartido(partido.id, "cancelado"))}
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs whitespace-nowrap text-[var(--muted)] hover:text-[var(--foreground)]"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs whitespace-nowrap text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
             >
               🚫 Cancelar
             </button>
@@ -153,7 +153,7 @@ export function PartidoAdmin({
         {inscritos.length > 0 && (
           <button
             onClick={exportarExcel}
-            className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+            className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)]"
           >
             📥 Exportar a Excel
           </button>
@@ -199,7 +199,7 @@ export function PartidoAdmin({
                       <button
                         disabled={pending}
                         onClick={() => run(() => marcarPagoManual(i.id, partido.costoPorJugador))}
-                        className="rounded-md border border-[var(--border)] px-2 py-1 text-xs hover:border-[var(--accent)]"
+                        className="rounded-md border border-[var(--border)] px-2 py-1 text-xs transition-colors hover:border-[var(--accent)]"
                       >
                         💵 Pagó en efectivo
                       </button>
@@ -226,7 +226,7 @@ export function PartidoAdmin({
                       <button
                         disabled={pending}
                         onClick={() => run(() => marcarMultaPagadaEfectivo(multa.id))}
-                        className="rounded-md border border-[var(--border)] px-2 py-1 hover:border-[var(--accent)]"
+                        className="rounded-md border border-[var(--border)] px-2 py-1 transition-colors hover:border-[var(--accent)]"
                       >
                         💵 Multa pagada (efectivo)
                       </button>
@@ -337,7 +337,7 @@ function AgregarJugador({
       <button
         disabled={pending}
         onClick={() => run(() => agregarJugadorAPartido(partidoId, elegido))}
-        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)]"
+        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
       >
         Agregar
       </button>
@@ -372,7 +372,7 @@ function ReemplazoForm({
       <button
         disabled={pending}
         onClick={() => onConfirmar(elegido)}
-        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)]"
+        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
       >
         Confirmar
       </button>
@@ -410,7 +410,7 @@ function RepetirForm({
       <button
         disabled={pending || !fecha}
         onClick={() => run(() => duplicar(partidoId, fecha, hora))}
-        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] disabled:opacity-50"
+        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
       >
         🔁 Duplicar
       </button>

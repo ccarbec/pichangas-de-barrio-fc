@@ -39,7 +39,7 @@ export function PagosPendientesTab({ pagos }: { pagos: Pago[] }) {
                 <button
                   disabled={pending}
                   onClick={() => startTransition(() => verificarPago(p.id))}
-                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)]"
+                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
                 >
                   ✅ Aprobar
                 </button>
@@ -68,7 +68,7 @@ export function PagosPendientesTab({ pagos }: { pagos: Pago[] }) {
                 ) : (
                   <button
                     onClick={() => setNotaAbierta(p.id)}
-                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--foreground)]"
+                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
                   >
                     ❌ Rechazar
                   </button>

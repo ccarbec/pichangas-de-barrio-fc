@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { obtenerPagosDePartido } from "@/actions/pagos";
 import { Badge } from "../../components/Badge";
+import { EmptyState } from "../../components/EmptyState";
 import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO } from "@/lib/estilos";
 
 type Partido = { id: number; etiqueta: string };
@@ -28,8 +29,8 @@ export function PagosPorPartidoTab({ partidos }: { partidos: Partido[] }) {
   if (partidos.length === 0) {
     return (
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Pagos por partido</h2>
-        <p className="mt-2 text-sm text-[var(--muted)]">Todavía no hay partidos.</p>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Pagos por partido</h2>
+        <EmptyState icon="💳" texto="Todavía no hay partidos." />
       </section>
     );
   }

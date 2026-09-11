@@ -50,7 +50,7 @@ export function MultasTab({
                   <button
                     disabled={pending}
                     onClick={() => startTransition(() => verificarMulta(m.id))}
-                    className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-foreground)]"
+                    className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
                   >
                     ✅ Aprobar
                   </button>
@@ -104,7 +104,7 @@ export function MultasTab({
             <button
               disabled={pending}
               onClick={() => startTransition(() => marcarMultaPagadaEfectivo(m.id))}
-              className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs whitespace-nowrap hover:border-[var(--accent)]"
+              className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs whitespace-nowrap transition-colors hover:border-[var(--accent)]"
             >
               💵 Pagó en efectivo
             </button>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { obtenerCuadre } from "@/actions/pagos";
+import { EmptyState } from "../../components/EmptyState";
 
 type Partido = { id: number; etiqueta: string; costoCancha: number };
 
@@ -18,8 +19,8 @@ export function CuadreTab({ partidos }: { partidos: Partido[] }) {
   if (partidos.length === 0) {
     return (
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Cuadre por partido</h2>
-        <p className="mt-2 text-sm text-[var(--muted)]">Todavía no hay partidos.</p>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Cuadre por partido</h2>
+        <EmptyState icon="💰" texto="Todavía no hay partidos." />
       </section>
     );
   }

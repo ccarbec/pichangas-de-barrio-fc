@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { obtenerUsuarioActual } from "@/lib/session";
 import { esArquero } from "@/lib/estilos";
+import { EmptyState } from "../../components/EmptyState";
 import { NuevoPartidoForm } from "./NuevoPartidoForm";
 import { PartidoAdmin } from "./PartidoAdmin";
 import { PartidoJugador } from "./PartidoJugador";
@@ -85,7 +86,7 @@ export default async function PartidosPage() {
           Programados
         </h2>
         {programados.length === 0 && (
-          <p className="text-sm text-[var(--muted)]">No hay pichangas programadas todavía.</p>
+          <EmptyState icon="⚽" texto="No hay pichangas programadas todavía." />
         )}
         {programados.map((partido) =>
           esAdmin ? (
@@ -114,7 +115,7 @@ export default async function PartidosPage() {
           Jugados / cancelados
         </h2>
         {historial.length === 0 && (
-          <p className="text-sm text-[var(--muted)]">Todavía no hay partidos jugados o cancelados.</p>
+          <EmptyState icon="🗂️" texto="Todavía no hay partidos jugados o cancelados." />
         )}
         {historial.map((partido) =>
           esAdmin ? (
