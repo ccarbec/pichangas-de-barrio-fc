@@ -53,6 +53,12 @@ export default async function LoginPage({
         >
           ¿Olvidaste tu contraseña?
         </Link>
+        <Link
+          href="/registro"
+          className="mt-2 block text-center text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
+        >
+          ¿Nuevo en el club? Crea tu cuenta
+        </Link>
       </div>
     </main>
   );
