@@ -51,7 +51,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Gestión Miembros</h1>
         <div className="flex gap-2">
           <button
@@ -135,7 +135,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
 
           {seleccionado && (
             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-              <div className="mb-4 flex items-center gap-4">
+              <div className="mb-4 flex flex-wrap items-center gap-4">
                 {seleccionado.foto ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={seleccionado.foto} alt="" className="h-16 w-16 rounded-full object-cover" />
@@ -215,7 +215,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                     Este jugador ya tiene partidos registrados — usa &quot;Inactivar&quot; para no perder ese historial.
                   </p>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <label className="flex items-center gap-2 text-xs text-[var(--muted)]">
                       <input type="checkbox" checked={confirmarEliminar} onChange={(e) => setConfirmarEliminar(e.target.checked)} />
                       Confirmo que quiero eliminarlo permanentemente
@@ -223,7 +223,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                     <button
                       disabled={!confirmarEliminar || pending}
                       onClick={() => run(() => eliminarJugador(seleccionado.id))}
-                      className="rounded-lg border border-[var(--danger)] px-3 py-1.5 text-xs text-[var(--danger)] disabled:opacity-40"
+                      className="rounded-lg border border-[var(--danger)] px-3 py-1.5 text-xs whitespace-nowrap text-[var(--danger)] disabled:opacity-40"
                     >
                       Eliminar definitivamente
                     </button>

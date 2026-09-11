@@ -73,32 +73,34 @@ export default async function DashboardPage() {
 
       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
         <h2 className="mb-4 text-sm font-semibold text-[var(--muted)]">Gestión Miembros</h2>
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
-              <th className="pb-2">Jugador</th>
-              <th className="pb-2">Rol</th>
-              <th className="pb-2">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ultimosJugadores.map((j) => (
-              <tr key={j.id} className="border-b border-[var(--border)]/50 last:border-0">
-                <td className="py-3 font-medium">
-                  {j.usuario.nombre} {j.apellidos}
-                </td>
-                <td className="py-3">
-                  <Badge variant="role">{j.usuario.rol.toUpperCase()}</Badge>
-                </td>
-                <td className="py-3">
-                  <Badge variant={j.estado === "activo" ? "active" : "danger"}>
-                    {j.estado.toUpperCase()}
-                  </Badge>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
+                <th className="pb-2">Jugador</th>
+                <th className="pb-2">Rol</th>
+                <th className="pb-2">Estado</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {ultimosJugadores.map((j) => (
+                <tr key={j.id} className="border-b border-[var(--border)]/50 last:border-0">
+                  <td className="py-3 font-medium whitespace-nowrap">
+                    {j.usuario.nombre} {j.apellidos}
+                  </td>
+                  <td className="py-3">
+                    <Badge variant="role">{j.usuario.rol.toUpperCase()}</Badge>
+                  </td>
+                  <td className="py-3">
+                    <Badge variant={j.estado === "activo" ? "active" : "danger"}>
+                      {j.estado.toUpperCase()}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

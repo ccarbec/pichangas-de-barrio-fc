@@ -33,4 +33,5 @@
 body {
   background: radial-gradient(circle at top left, #14203a 0%, var(--background) 55%);
   color: var(--foreground);
+  overflow-x: hidden;
 }

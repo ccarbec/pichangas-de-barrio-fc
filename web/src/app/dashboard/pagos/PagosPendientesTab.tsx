@@ -35,21 +35,21 @@ export function PagosPendientesTab({ pagos }: { pagos: Pago[] }) {
               <p className="mt-1 text-sm">
                 Monto: <span className="font-semibold">S/ {p.monto.toFixed(2)}</span>
               </p>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   disabled={pending}
                   onClick={() => startTransition(() => verificarPago(p.id))}
-                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-foreground)]"
+                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)]"
                 >
                   ✅ Aprobar
                 </button>
                 {notaAbierta === p.id ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <input
                       value={nota}
                       onChange={(e) => setNota(e.target.value)}
                       placeholder="Motivo (opcional)"
-                      className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                      className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
                     />
                     <button
                       disabled={pending}

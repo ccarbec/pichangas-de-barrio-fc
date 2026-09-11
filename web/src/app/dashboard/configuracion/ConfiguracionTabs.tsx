@@ -27,9 +27,9 @@ export function ConfiguracionTabs({ estadios, config }: { estadios: Estadio[]; c
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Configuración</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setTab("estadios")}
             className={`rounded-lg px-3 py-1.5 text-sm ${tab === "estadios" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)]"}`}
@@ -120,7 +120,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
 
         {seleccionado && (
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-            <div className="mb-4 flex items-center gap-4">
+            <div className="mb-4 flex flex-wrap items-center gap-4">
               {seleccionado.foto ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={seleccionado.foto} alt="" className="h-20 w-20 rounded-lg object-cover" />

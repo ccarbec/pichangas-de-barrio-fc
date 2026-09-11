@@ -36,9 +36,9 @@ export function PartidoJugador({
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-semibold">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-semibold break-words">
             {partido.fecha} · {partido.hora} — {partido.cancha}
           </p>
           <p className="text-sm text-[var(--muted)]">S/ {partido.costoPorJugador.toFixed(2)} por jugador</p>
@@ -52,7 +52,7 @@ export function PartidoJugador({
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-start gap-2 sm:items-end">
           {!inscritoActivo ? (
             <button
               disabled={pending}

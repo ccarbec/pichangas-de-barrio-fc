@@ -97,14 +97,14 @@ export function MultasTab({
       )}
       <div className="flex flex-col gap-2">
         {todasPendientes.map((m) => (
-          <div key={m.id} className="flex items-center justify-between rounded-lg bg-[var(--background)] px-3 py-2 text-sm">
-            <span className="font-medium">{m.nombre}</span>
+          <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--background)] px-3 py-2 text-sm">
+            <span className="min-w-0 break-words font-medium">{m.nombre}</span>
             <span className="text-[var(--muted)]">{m.tipo === "tardanza" ? "Tardanza" : "No asistencia"}</span>
             <span>S/ {m.monto.toFixed(2)}</span>
             <button
               disabled={pending}
               onClick={() => startTransition(() => marcarMultaPagadaEfectivo(m.id))}
-              className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs hover:border-[var(--accent)]"
+              className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs whitespace-nowrap hover:border-[var(--accent)]"
             >
               💵 Pagó en efectivo
             </button>

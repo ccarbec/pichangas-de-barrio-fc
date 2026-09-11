@@ -9,6 +9,12 @@ import { AsistenciaSelect } from "./AsistenciaSelect";
 import { Badge } from "../../components/Badge";
 import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO, emojiPosicion, nombreCompleto } from "@/lib/estilos";
 
+const ETIQUETA_ASISTENCIA_EXCEL: Record<string, string> = {
+  llego: "Llegó",
+  tardanza: "Tardanza",
+  no_llego: "No llegó",
+};
+
 type Jugador = { id: number; apellidos: string; apodo: string | null; posicion: string | null; usuario: { nombre: string; telefono: string } };
 type Inscripcion = {
   id: number;
@@ -67,11 +73,32 @@ export function PartidoAdmin({
     });
   }
 
+  async function exportarExcel() {
+    const XLSX = await import("xlsx");
+    const filas = inscritos.map((i) => {
+      const multa = multasPorJugador.get(i.jugadorId);
+      return {
+        Jugador: nombreCompleto(i.jugador),
+        Celular: i.jugador.usuario.telefono,
+        Posición: i.jugador.posicion ?? "",
+        Inscripción: ETIQUETA_INSCRIPCION[i.estado]?.texto ?? i.estado,
+        Pago: ETIQUETA_PAGO[i.pago?.estado ?? "sin_pago"]?.texto ?? "Sin pago",
+        Asistencia: i.asistio ? (ETIQUETA_ASISTENCIA_EXCEL[i.asistio] ?? i.asistio) : "Sin marcar",
+        Multa: multa ? `${multa.tipo === "tardanza" ? "Tardanza" : "No asistencia"} — S/ ${multa.monto.toFixed(2)} (${multa.estado === "pagado" ? "pagada" : "pendiente"})` : "",
+      };
+    });
+    const hoja = XLSX.utils.json_to_sheet(filas);
+    hoja["!cols"] = [{ wch: 28 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 20 }, { wch: 12 }, { wch: 36 }];
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Inscritos");
+    XLSX.writeFile(libro, `inscritos_${partido.fecha}.xlsx`);
+  }
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex-1">
-          <p className="font-semibold">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold break-words">
             {partido.fecha} · {partido.hora} — {partido.cancha}
           </p>
           <div className="mt-2 h-2 w-full max-w-xs overflow-hidden rounded-full bg-[var(--background)]">
@@ -87,18 +114,18 @@ export function PartidoAdmin({
         </div>
 
         {partido.estado === "programado" && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               disabled={pending || (faltanPago > 0 && !autorizarCierre)}
               onClick={() => run(() => cambiarEstadoPartido(partido.id, "jugado"))}
-              className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-foreground)] disabled:opacity-40"
+              className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] disabled:opacity-40"
             >
               ✅ Cerrar (jugado)
             </button>
             <button
               disabled={pending}
               onClick={() => run(() => cambiarEstadoPartido(partido.id, "cancelado"))}
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs text-[var(--muted)] hover:text-[var(--foreground)]"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs whitespace-nowrap text-[var(--muted)] hover:text-[var(--foreground)]"
             >
               🚫 Cancelar
             </button>
@@ -115,12 +142,22 @@ export function PartidoAdmin({
 
       {error && <p className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
 
-      <button
-        onClick={() => setVerInscritos((v) => !v)}
-        className="mt-4 text-sm font-semibold text-[var(--accent)]"
-      >
-        {verInscritos ? "▾" : "▸"} Ver inscritos ({inscritos.length})
-      </button>
+      <div className="mt-4 flex flex-wrap items-center gap-4">
+        <button
+          onClick={() => setVerInscritos((v) => !v)}
+          className="text-sm font-semibold text-[var(--accent)]"
+        >
+          {verInscritos ? "▾" : "▸"} Ver inscritos ({inscritos.length})
+        </button>
+        {inscritos.length > 0 && (
+          <button
+            onClick={exportarExcel}
+            className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+          >
+            📥 Exportar a Excel
+          </button>
+        )}
+      </div>
 
       {verInscritos && (
         <div className="mt-3 flex flex-col gap-3 border-t border-[var(--border)] pt-4">
@@ -134,11 +171,11 @@ export function PartidoAdmin({
             const puedeGestionar = i.estado === "confirmado" && partido.estado !== "cancelado";
             return (
               <div key={i.id} className="rounded-lg border border-[var(--border)] p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-medium">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="min-w-0 break-words text-sm font-medium">
                     {emojiPosicion(i.jugador.posicion)} {nombreCompleto(i.jugador)} ({i.jugador.usuario.telefono})
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={ETIQUETA_INSCRIPCION[i.estado]?.variant ?? "neutral"}>
                       {ETIQUETA_INSCRIPCION[i.estado]?.texto ?? i.estado}
                     </Badge>
@@ -148,7 +185,7 @@ export function PartidoAdmin({
                     <button
                       disabled={pending}
                       onClick={() => run(() => cancelarInscripcion(i.id))}
-                      className="text-xs text-[var(--danger)] hover:underline"
+                      className="text-xs whitespace-nowrap text-[var(--danger)] hover:underline"
                     >
                       🗑️ Quitar
                     </button>
@@ -284,11 +321,11 @@ function AgregarJugador({
 }) {
   const [elegido, setElegido] = useState(disponibles[0]?.id ?? 0);
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       <select
         value={elegido}
         onChange={(e) => setElegido(Number(e.target.value))}
-        className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+        className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
       >
         {disponibles.map((j) => (
           <option key={j.id} value={j.id}>
@@ -299,7 +336,7 @@ function AgregarJugador({
       <button
         disabled={pending}
         onClick={() => run(() => agregarJugadorAPartido(partidoId, elegido))}
-        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-foreground)]"
+        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)]"
       >
         Agregar
       </button>
@@ -319,11 +356,11 @@ function ReemplazoForm({
   const [elegido, setElegido] = useState(candidatos[0]?.id ?? 0);
   if (candidatos.length === 0) return <p className="text-xs text-[var(--muted)]">No hay más jugadores disponibles.</p>;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       <select
         value={elegido}
         onChange={(e) => setElegido(Number(e.target.value))}
-        className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+        className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
       >
         {candidatos.map((j) => (
           <option key={j.id} value={j.id}>
@@ -334,7 +371,7 @@ function ReemplazoForm({
       <button
         disabled={pending}
         onClick={() => onConfirmar(elegido)}
-        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-foreground)]"
+        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)]"
       >
         Confirmar
       </button>
@@ -356,7 +393,7 @@ function RepetirForm({
   const [fecha, setFecha] = useState("");
   const [hora, setHora] = useState("19:00");
   return (
-    <div className="mt-4 flex items-center gap-2 border-t border-[var(--border)] pt-4">
+    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
       <input
         type="date"
         value={fecha}
@@ -372,7 +409,7 @@ function RepetirForm({
       <button
         disabled={pending || !fecha}
         onClick={() => run(() => duplicar(partidoId, fecha, hora))}
-        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-foreground)] disabled:opacity-50"
+        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] disabled:opacity-50"
       >
         🔁 Duplicar
       </button>
