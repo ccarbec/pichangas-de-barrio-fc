@@ -4,12 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Newspaper,
-  CalendarDays,
   ClipboardList,
   Wallet,
-  Images,
   Users,
+  Trophy,
+  Settings,
   UserCircle,
 } from "lucide-react";
 
@@ -18,9 +17,8 @@ const ITEMS = [
   { href: "/dashboard/partidos", label: "Partidos", icon: ClipboardList },
   { href: "/dashboard/pagos", label: "Pagos", icon: Wallet },
   { href: "/dashboard/miembros", label: "Gestión Miembros", icon: Users },
-  { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
-  { href: "/dashboard/eventos", label: "Eventos", icon: CalendarDays },
-  { href: "/dashboard/galerias", label: "Galerías", icon: Images },
+  { href: "/dashboard/tabla-club", label: "Tabla del Club", icon: Trophy },
+  { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
   { href: "/dashboard/perfil", label: "Mi Perfil", icon: UserCircle },
 ];
 
