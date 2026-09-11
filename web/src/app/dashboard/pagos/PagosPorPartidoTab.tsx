@@ -12,9 +12,11 @@ type FilaPago = {
   nombre: string;
   telefono: string;
   estadoInscripcion: string;
+  pagoId: number | null;
   monto: number | null;
   estadoPago: string;
   metodoPago: string | null;
+  tieneComprobante: boolean;
 };
 
 export function PagosPorPartidoTab({ partidos }: { partidos: Partido[] }) {
@@ -59,20 +61,21 @@ export function PagosPorPartidoTab({ partidos }: { partidos: Partido[] }) {
               <th className="pb-2 pr-3">Jugador</th>
               <th className="pb-2 pr-3">Inscripción</th>
               <th className="pb-2 pr-3">Pago</th>
-              <th className="pb-2">Monto</th>
+              <th className="pb-2 pr-3">Monto</th>
+              <th className="pb-2">Comprobante</th>
             </tr>
           </thead>
           <tbody>
             {filas === null && (
               <tr>
-                <td colSpan={4} className="py-3 text-[var(--muted)]">
+                <td colSpan={5} className="py-3 text-[var(--muted)]">
                   Cargando…
                 </td>
               </tr>
             )}
             {filas?.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-3 text-[var(--muted)]">
+                <td colSpan={5} className="py-3 text-[var(--muted)]">
                   Nadie se inscribió a este partido.
                 </td>
               </tr>
@@ -91,7 +94,21 @@ export function PagosPorPartidoTab({ partidos }: { partidos: Partido[] }) {
                   </Badge>
                   {f.metodoPago && <span className="ml-2 text-xs text-[var(--muted)]">({f.metodoPago})</span>}
                 </td>
-                <td className="py-2">{f.monto != null ? `S/ ${f.monto.toFixed(2)}` : "—"}</td>
+                <td className="py-2 pr-3">{f.monto != null ? `S/ ${f.monto.toFixed(2)}` : "—"}</td>
+                <td className="py-2">
+                  {f.tieneComprobante && f.pagoId ? (
+                    <a
+                      href={`/api/comprobante/${f.pagoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[var(--accent)] transition-colors hover:underline"
+                    >
+                      🧾 Ver
+                    </a>
+                  ) : (
+                    <span className="text-xs text-[var(--muted)]">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -2,12 +2,14 @@
 
 import { useState, useTransition, useRef } from "react";
 import { subirGaleria } from "@/actions/galeria";
+import { Toast } from "../../components/Toast";
 
 type Partido = { id: number; etiqueta: string };
 
 export function GaleriaUploadForm({ partidos }: { partidos: Partido[] }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   return (
@@ -19,6 +21,7 @@ export function GaleriaUploadForm({ partidos }: { partidos: Partido[] }) {
           try {
             await subirGaleria(formData);
             formRef.current?.reset();
+            setToast("Archivo subido a la galería.");
           } catch (e) {
             setError(e instanceof Error ? e.message : "Error al subir el archivo.");
           }
@@ -26,6 +29,7 @@ export function GaleriaUploadForm({ partidos }: { partidos: Partido[] }) {
       }}
       className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5"
     >
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <p className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Subir a la galería</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>

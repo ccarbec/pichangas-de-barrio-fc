@@ -9,6 +9,7 @@ import {
   subirFotoJugador,
 } from "@/actions/jugadores";
 import { Badge } from "../../components/Badge";
+import { Toast } from "../../components/Toast";
 import { nombreCompleto, POSICIONES_SUGERIDAS } from "@/lib/estilos";
 
 type Jugador = {
@@ -34,6 +35,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
   const [error, setError] = useState<string | null>(null);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
 
   const seleccionado = jugadores.find((j) => j.id === seleccionId) ?? null;
 
@@ -47,11 +49,12 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
       )
     : jugadores;
 
-  function run(fn: () => Promise<unknown>) {
+  function run(fn: () => Promise<unknown>, mensajeExito?: string) {
     startTransition(async () => {
       setError(null);
       try {
         await fn();
+        if (mensajeExito) setToast(mensajeExito);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
       }
@@ -60,6 +63,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <datalist id="posiciones-sugeridas">
         {POSICIONES_SUGERIDAS.map((p) => (
           <option key={p} value={p} />
@@ -92,6 +96,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
             try {
               await crearJugadorManual(formData);
               setTab("lista");
+              setToast("Jugador agregado correctamente.");
             } catch (e) {
               setError(e instanceof Error ? e.message : "Error");
             }
@@ -169,7 +174,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                   <div className="h-16 w-16 rounded-full bg-[var(--background)]" />
                 )}
                 <form
-                  action={(fd) => run(() => subirFotoJugador(fd))}
+                  action={(fd) => run(() => subirFotoJugador(fd), "Foto actualizada.")}
                   className="flex items-center gap-2"
                 >
                   <input type="hidden" name="jugadorId" value={seleccionado.id} />
@@ -182,7 +187,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
 
               <form
                 key={seleccionado.id}
-                action={(fd) => run(() => actualizarJugador(fd))}
+                action={(fd) => run(() => actualizarJugador(fd), "Datos actualizados.")}
                 className="grid grid-cols-1 gap-3 sm:grid-cols-2"
               >
                 <input type="hidden" name="jugadorId" value={seleccionado.id} />
@@ -215,7 +220,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                     <button
                       type="button"
                       disabled={pending}
-                      onClick={() => run(() => cambiarEstadoJugador(seleccionado.id, false))}
+                      onClick={() => run(() => cambiarEstadoJugador(seleccionado.id, false), "Jugador inactivado.")}
                       className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                     >
                       🚫 Inactivar
@@ -224,7 +229,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                     <button
                       type="button"
                       disabled={pending}
-                      onClick={() => run(() => cambiarEstadoJugador(seleccionado.id, true))}
+                      onClick={() => run(() => cambiarEstadoJugador(seleccionado.id, true), "Jugador reactivado.")}
                       className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                     >
                       ♻️ Reactivar
@@ -249,7 +254,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                     </label>
                     <button
                       disabled={!confirmarEliminar || pending}
-                      onClick={() => run(() => eliminarJugador(seleccionado.id))}
+                      onClick={() => run(() => eliminarJugador(seleccionado.id), "Jugador eliminado.")}
                       className="rounded-lg border border-[var(--danger)] px-3 py-1.5 text-xs whitespace-nowrap text-[var(--danger)] disabled:opacity-40"
                     >
                       Eliminar definitivamente

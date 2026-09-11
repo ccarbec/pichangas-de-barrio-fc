@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -44,6 +45,13 @@ export default async function LoginPage({
             Ingresar
           </button>
         </form>
+
+        <Link
+          href="/reset-password"
+          className="mt-4 block text-center text-xs text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
       </div>
     </main>
   );

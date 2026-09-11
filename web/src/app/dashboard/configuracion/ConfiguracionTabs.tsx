@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { crearEstadio, actualizarEstadio, cambiarEstadoEstadio, subirFotoEstadio } from "@/actions/estadios";
 import { guardarClubConfig } from "@/actions/club-config";
 import { Badge } from "../../components/Badge";
+import { Toast } from "../../components/Toast";
 
 type Estadio = {
   id: number;
@@ -56,11 +57,14 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
   const [seleccionId, setSeleccionId] = useState<number | null>(estadios[0]?.id ?? null);
   const seleccionado = estadios.find((e) => e.id === seleccionId) ?? null;
 
-  function run(fn: () => Promise<unknown>) {
+  const [toast, setToast] = useState<string | null>(null);
+
+  function run(fn: () => Promise<unknown>, mensajeExito?: string) {
     startTransition(async () => {
       setError(null);
       try {
         await fn();
+        if (mensajeExito) setToast(mensajeExito);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
       }
@@ -69,8 +73,9 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <form
-        action={(fd) => run(() => crearEstadio(fd))}
+        action={(fd) => run(() => crearEstadio(fd), "Zona agregada.")}
         className="grid grid-cols-1 gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:grid-cols-3"
       >
         <div>
@@ -127,7 +132,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
               ) : (
                 <div className="h-20 w-20 rounded-lg bg-[var(--background)]" />
               )}
-              <form action={(fd) => run(() => subirFotoEstadio(fd))} className="flex items-center gap-2">
+              <form action={(fd) => run(() => subirFotoEstadio(fd), "Foto actualizada.")} className="flex items-center gap-2">
                 <input type="hidden" name="estadioId" value={seleccionado.id} />
                 <input type="file" name="foto" accept="image/png,image/jpeg" className="text-xs" />
                 <button type="submit" className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs transition-colors hover:border-[var(--accent)]">
@@ -138,7 +143,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
 
             <form
               key={seleccionado.id}
-              action={(fd) => run(() => actualizarEstadio(fd))}
+              action={(fd) => run(() => actualizarEstadio(fd), "Datos actualizados.")}
               className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             >
               <input type="hidden" name="estadioId" value={seleccionado.id} />
@@ -162,7 +167,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => run(() => cambiarEstadoEstadio(seleccionado.id, false))}
+                    onClick={() => run(() => cambiarEstadoEstadio(seleccionado.id, false), "Zona desactivada.")}
                     className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                   >
                     Desactivar
@@ -171,7 +176,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => run(() => cambiarEstadoEstadio(seleccionado.id, true))}
+                    onClick={() => run(() => cambiarEstadoEstadio(seleccionado.id, true), "Zona reactivada.")}
                     className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm transition-colors hover:border-[var(--accent)]"
                   >
                     Reactivar
@@ -188,12 +193,25 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
 
 function YapeTab({ config }: { config: Config }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   return (
     <form
-      action={(fd) => startTransition(() => guardarClubConfig(fd))}
+      action={(fd) => {
+        setError(null);
+        startTransition(async () => {
+          try {
+            await guardarClubConfig(fd);
+            setToast("Configuración guardada.");
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Error");
+          }
+        });
+      }}
       className="grid max-w-md grid-cols-1 gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5"
     >
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <div>
         <label className="mb-1 block text-xs text-[var(--muted)]">Nombre en Yape</label>
         <input name="nombreYape" defaultValue={config.nombreYape} className={inputClass} />
@@ -210,6 +228,7 @@ function YapeTab({ config }: { config: Config }) {
         <label className="mb-1 block text-xs text-[var(--muted)]">Multa por no asistir (S/)</label>
         <input name="montoMultaNoAsistio" type="number" step="0.5" defaultValue={config.montoMultaNoAsistio} className={inputClass} />
       </div>
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
       <button type="submit" disabled={pending} className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">
         💾 Guardar configuración
       </button>

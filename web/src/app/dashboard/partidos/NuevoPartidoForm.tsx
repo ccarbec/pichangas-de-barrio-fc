@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { crearPartido } from "@/actions/partidos";
+import { Toast } from "../../components/Toast";
 
 type Estadio = {
   id: number;
@@ -14,9 +15,13 @@ export function NuevoPartidoForm({ estadios }: { estadios: Estadio[] }) {
   const [abierto, setAbierto] = useState(false);
   const [estadioId, setEstadioId] = useState<string>(estadios[0]?.id.toString() ?? "otro");
   const estadio = estadios.find((e) => e.id.toString() === estadioId);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <button
         onClick={() => setAbierto((v) => !v)}
         className="w-full px-5 py-3 text-left text-sm font-semibold"
@@ -25,9 +30,17 @@ export function NuevoPartidoForm({ estadios }: { estadios: Estadio[] }) {
       </button>
       {abierto && (
         <form
-          action={async (formData) => {
-            await crearPartido(formData);
-            setAbierto(false);
+          action={(formData) => {
+            setError(null);
+            startTransition(async () => {
+              try {
+                await crearPartido(formData);
+                setAbierto(false);
+                setToast("Pichanga programada correctamente.");
+              } catch (e) {
+                setError(e instanceof Error ? e.message : "Error al programar la pichanga.");
+              }
+            });
           }}
           className="flex flex-col gap-3 border-t border-[var(--border)] p-5"
         >
@@ -133,11 +146,14 @@ export function NuevoPartidoForm({ estadios }: { estadios: Estadio[] }) {
             />
           </div>
 
+          {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+
           <button
             type="submit"
-            className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+            disabled={pending}
+            className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
           >
-            Programar pichanga
+            {pending ? "Guardando…" : "Programar pichanga"}
           </button>
         </form>
       )}

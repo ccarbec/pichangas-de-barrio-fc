@@ -11,6 +11,7 @@ import {
   Settings,
   UserCircle,
   Images,
+  Contact,
   X,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ const ITEMS_ADMIN = [
   { href: "/dashboard/miembros", label: "Gestión Miembros", icon: Users },
   { href: "/dashboard/tabla-club", label: "Tabla del Club", icon: Trophy },
   { href: "/dashboard/galeria", label: "Galería", icon: Images },
+  { href: "/dashboard/perfiles", label: "Perfiles del Club", icon: Contact },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
   { href: "/dashboard/perfil", label: "Mi Perfil", icon: UserCircle },
 ];
@@ -30,6 +32,7 @@ const ITEMS_JUGADOR = [
   { href: "/dashboard/partidos", label: "Partidos", icon: ClipboardList },
   { href: "/dashboard/tabla-club", label: "Tabla del Club", icon: Trophy },
   { href: "/dashboard/galeria", label: "Galería", icon: Images },
+  { href: "/dashboard/perfiles", label: "Perfiles del Club", icon: Contact },
   { href: "/dashboard/perfil", label: "Mi Perfil", icon: UserCircle },
 ];
 

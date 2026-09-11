@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-auth";
-import { generarHash } from "@/lib/auth-crypto";
+import { requireAdmin, requireLogin } from "@/lib/require-auth";
+import { generarHash, verificarPassword } from "@/lib/auth-crypto";
 import { normalizarTelefono } from "@/lib/telefono";
 
 export async function crearJugadorManual(formData: FormData) {
@@ -101,7 +101,12 @@ export async function eliminarJugador(jugadorId: number) {
 }
 
 export async function subirFotoJugador(formData: FormData) {
+  const usuario = await requireLogin();
   const jugadorId = Number(formData.get("jugadorId"));
+  if (usuario.rol !== "admin") {
+    const propio = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
+    if (!propio || propio.id !== jugadorId) throw new Error("No autorizado.");
+  }
   const archivo = formData.get("foto") as File | null;
   if (!archivo || archivo.size === 0) throw new Error("Selecciona una foto.");
   if (archivo.size > 5 * 1024 * 1024) throw new Error("La foto pesa más de 5MB.");
@@ -116,25 +121,53 @@ export async function subirFotoJugador(formData: FormData) {
 }
 
 export async function actualizarMiPerfil(formData: FormData) {
-  const jugadorId = Number(formData.get("jugadorId"));
-  await prisma.jugador.update({
-    where: { id: jugadorId },
-    data: {
-      apodo: String(formData.get("apodo") ?? "").trim() || null,
-      posicion: String(formData.get("posicion") ?? "") || null,
-      equipoHincha: String(formData.get("equipoHincha") ?? "").trim(),
-      camiseta: String(formData.get("camiseta") ?? "").trim(),
-      resena: String(formData.get("resena") ?? "").trim(),
-    },
-  });
+  const usuario = await requireLogin();
+  const jugador = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
+  if (!jugador) throw new Error("No tienes perfil de jugador.");
+
+  const nombres = String(formData.get("nombres") ?? "").trim();
+
+  await prisma.$transaction([
+    prisma.jugador.update({
+      where: { id: jugador.id },
+      data: {
+        apellidos: String(formData.get("apellidos") ?? "").trim(),
+        apodo: String(formData.get("apodo") ?? "").trim() || null,
+        posicion: String(formData.get("posicion") ?? "") || null,
+        equipoHincha: String(formData.get("equipoHincha") ?? "").trim(),
+        camiseta: String(formData.get("camiseta") ?? "").trim(),
+        resena: String(formData.get("resena") ?? "").trim(),
+      },
+    }),
+    ...(nombres ? [prisma.usuario.update({ where: { id: usuario.id }, data: { nombre: nombres } })] : []),
+  ]);
+
   revalidatePath("/dashboard/perfil");
+  revalidatePath("/dashboard/miembros");
 }
 
-export async function activarMiPerfil(usuarioId: number, apodo: string, posicion: string) {
-  const existente = await prisma.jugador.findUnique({ where: { usuarioId } });
+export async function cambiarMiPassword(formData: FormData) {
+  const usuario = await requireLogin();
+  const passwordActual = String(formData.get("passwordActual") ?? "");
+  const passwordNueva = String(formData.get("passwordNueva") ?? "");
+
+  if (!passwordNueva) throw new Error("Escribe una contraseña nueva.");
+
+  const usuarioCompleto = await prisma.usuario.findUniqueOrThrow({ where: { id: usuario.id } });
+  if (!verificarPassword(passwordActual, usuarioCompleto.passwordHash, usuarioCompleto.salt)) {
+    throw new Error("Tu contraseña actual no es correcta.");
+  }
+
+  const { hash, salt } = generarHash(passwordNueva);
+  await prisma.usuario.update({ where: { id: usuario.id }, data: { passwordHash: hash, salt } });
+}
+
+export async function activarMiPerfil(apodo: string, posicion: string) {
+  const usuario = await requireLogin();
+  const existente = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
   if (existente) return;
   await prisma.jugador.create({
-    data: { usuarioId, apodo: apodo.trim() || null, posicion: posicion || null },
+    data: { usuarioId: usuario.id, apodo: apodo.trim() || null, posicion: posicion || null },
   });
   revalidatePath("/dashboard/perfil");
   revalidatePath("/dashboard");

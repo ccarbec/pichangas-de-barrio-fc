@@ -123,9 +123,11 @@ export async function obtenerPagosDePartido(partidoId: number) {
     nombre: `${i.jugador.usuario.nombre} ${i.jugador.apellidos}`.trim(),
     telefono: i.jugador.usuario.telefono,
     estadoInscripcion: i.estado,
+    pagoId: i.pago?.id ?? null,
     monto: i.pago?.monto ?? null,
     estadoPago: i.pago?.estado ?? "sin_pago",
     metodoPago: i.pago?.metodoPago ?? null,
+    tieneComprobante: i.pago?.comprobanteImg != null,
   }));
 }
 

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { activarMiPerfil } from "@/actions/jugadores";
 import { POSICIONES_SUGERIDAS } from "@/lib/estilos";
 
-export function ActivarPerfilForm({ usuarioId }: { usuarioId: number }) {
+export function ActivarPerfilForm() {
   const [apodo, setApodo] = useState("");
   const [posicion, setPosicion] = useState("Cualquiera");
   const [pending, startTransition] = useTransition();
@@ -13,7 +13,7 @@ export function ActivarPerfilForm({ usuarioId }: { usuarioId: number }) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        startTransition(() => activarMiPerfil(usuarioId, apodo, posicion));
+        startTransition(() => activarMiPerfil(apodo, posicion));
       }}
       className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5"
     >

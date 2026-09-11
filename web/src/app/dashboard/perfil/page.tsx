@@ -19,7 +19,7 @@ export default async function PerfilPage() {
           Todavía no tienes un perfil de jugador — actívalo para confirmar asistencia y aparecer en las
           pichangas, sin dejar de ser presidente.
         </p>
-        <ActivarPerfilForm usuarioId={usuario.id} />
+        <ActivarPerfilForm />
       </div>
     );
   }
@@ -30,6 +30,8 @@ export default async function PerfilPage() {
       <PerfilForm
         jugador={{
           id: jugador.id,
+          nombre: usuario.nombre,
+          apellidos: jugador.apellidos,
           apodo: jugador.apodo,
           posicion: jugador.posicion,
           equipoHincha: jugador.equipoHincha,
