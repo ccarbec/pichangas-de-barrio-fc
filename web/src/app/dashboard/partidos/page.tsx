@@ -5,6 +5,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { NuevoPartidoForm } from "./NuevoPartidoForm";
 import { PartidoAdmin } from "./PartidoAdmin";
 import { PartidoJugador } from "./PartidoJugador";
+import { MisMultas } from "./MisMultas";
 
 export default async function PartidosPage() {
   const usuario = await obtenerUsuarioActual();
@@ -37,7 +38,7 @@ export default async function PartidosPage() {
   const todosPartidos = [...programados, ...historial];
   const partidoIds = todosPartidos.map((p) => p.id);
 
-  const [inscripciones, multas] = await Promise.all([
+  const [inscripciones, multas, misMultas] = await Promise.all([
     prisma.inscripcion.findMany({
       where: { partidoId: { in: partidoIds }, estado: { not: "cancelado" } },
       select: {
@@ -60,6 +61,12 @@ export default async function PartidosPage() {
       orderBy: [{ jugador: { apellidos: "asc" } }],
     }),
     prisma.multa.findMany({ where: { partidoId: { in: partidoIds } } }),
+    jugadorActual
+      ? prisma.multa.findMany({
+          where: { jugadorId: jugadorActual.id, estado: { not: "pagado" } },
+          orderBy: { fechaCreacion: "desc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   const inscripcionesPorPartido = new Map<number, typeof inscripciones>();
@@ -94,6 +101,19 @@ export default async function PartidosPage() {
     );
   }
 
+  const partidoPorId = new Map(todosPartidos.map((p) => [p.id, p]));
+  const misMultasConEtiqueta = misMultas.map((m) => {
+    const p = m.partidoId ? partidoPorId.get(m.partidoId) : null;
+    return {
+      id: m.id,
+      tipo: m.tipo,
+      monto: m.monto,
+      estado: m.estado,
+      nota: m.nota,
+      partidoEtiqueta: p ? `${p.fecha} ${p.hora} — ${p.cancha}` : null,
+    };
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -101,6 +121,8 @@ export default async function PartidosPage() {
       </div>
 
       {esAdmin && <NuevoPartidoForm estadios={estadios} />}
+
+      {!esAdmin && misMultasConEtiqueta.length > 0 && <MisMultas multas={misMultasConEtiqueta} />}
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
