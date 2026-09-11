@@ -18,12 +18,12 @@ export function GaleriaUploadForm({ partidos }: { partidos: Partido[] }) {
       action={(formData) => {
         setError(null);
         startTransition(async () => {
-          try {
-            await subirGaleria(formData);
+          const resultado = await subirGaleria(formData);
+          if (resultado?.error) {
+            setError(resultado.error);
+          } else {
             formRef.current?.reset();
             setToast("Archivo subido a la galería.");
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Error al subir el archivo.");
           }
         });
       }}

@@ -11,7 +11,8 @@ export default async function LoginPage({
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <span className="text-4xl">⚽</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.jpg" alt="Pichangas de Barrio FC" className="h-16 w-16 rounded-xl object-cover" />
           <h1 className="text-lg font-bold">PICHANGAS DE BARRIO FC</h1>
           <p className="text-sm text-[var(--muted)]">Panel del club</p>
         </div>

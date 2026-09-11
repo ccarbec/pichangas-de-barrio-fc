@@ -66,11 +66,8 @@ export function PartidoJugador({
               onClick={() =>
                 startTransition(async () => {
                   setError(null);
-                  try {
-                    await confirmarAsistencia(partido.id);
-                  } catch (e) {
-                    setError(e instanceof Error ? e.message : "Error");
-                  }
+                  const resultado = await confirmarAsistencia(partido.id);
+                  if (resultado?.error) setError(resultado.error);
                 })
               }
               className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
@@ -116,11 +113,8 @@ export function PartidoJugador({
             <form
               action={async (formData) => {
                 setError(null);
-                try {
-                  await registrarPago(formData);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Error al subir el comprobante.");
-                }
+                const resultado = await registrarPago(formData);
+                if (resultado?.error) setError(resultado.error);
               }}
               className="mt-3 flex flex-wrap items-center gap-3"
             >

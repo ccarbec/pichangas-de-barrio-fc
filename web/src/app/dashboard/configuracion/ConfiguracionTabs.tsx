@@ -63,8 +63,12 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
     startTransition(async () => {
       setError(null);
       try {
-        await fn();
-        if (mensajeExito) setToast(mensajeExito);
+        const resultado = await fn();
+        if (resultado && typeof resultado === "object" && "error" in resultado && resultado.error) {
+          setError(String(resultado.error));
+        } else if (mensajeExito) {
+          setToast(mensajeExito);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
       }

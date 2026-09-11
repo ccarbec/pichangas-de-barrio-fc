@@ -53,8 +53,12 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
     startTransition(async () => {
       setError(null);
       try {
-        await fn();
-        if (mensajeExito) setToast(mensajeExito);
+        const resultado = await fn();
+        if (resultado && typeof resultado === "object" && "error" in resultado && resultado.error) {
+          setError(String(resultado.error));
+        } else if (mensajeExito) {
+          setToast(mensajeExito);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
       }
@@ -93,12 +97,12 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
         <form
           action={async (formData) => {
             setError(null);
-            try {
-              await crearJugadorManual(formData);
+            const resultado = await crearJugadorManual(formData);
+            if (resultado?.error) {
+              setError(resultado.error);
+            } else {
               setTab("lista");
               setToast("Jugador agregado correctamente.");
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Error");
             }
           }}
           className="grid grid-cols-1 gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:grid-cols-2"

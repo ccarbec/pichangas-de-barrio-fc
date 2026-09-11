@@ -26,8 +26,12 @@ export function PerfilForm({ jugador }: { jugador: Jugador }) {
     setError(null);
     startTransition(async () => {
       try {
-        await fn();
-        setToast(mensajeExito);
+        const resultado = await fn();
+        if (resultado && typeof resultado === "object" && "error" in resultado && resultado.error) {
+          setError(String(resultado.error));
+        } else {
+          setToast(mensajeExito);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
       }
@@ -137,12 +141,12 @@ function CambiarPasswordForm() {
       action={(fd) => {
         setError(null);
         startTransition(async () => {
-          try {
-            await cambiarMiPassword(fd);
+          const resultado = await cambiarMiPassword(fd);
+          if (resultado?.error) {
+            setError(resultado.error);
+          } else {
             setToast("Contraseña actualizada.");
             formRef.current?.reset();
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Error");
           }
         });
       }}

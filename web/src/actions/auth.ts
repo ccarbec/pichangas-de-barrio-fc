@@ -11,18 +11,19 @@ export async function logout() {
   redirect("/login");
 }
 
-export async function restablecerPassword(formData: FormData) {
+export async function restablecerPassword(formData: FormData): Promise<{ error?: string }> {
   const celular = normalizarTelefono(String(formData.get("celular") ?? ""));
   const nuevaPassword = String(formData.get("nuevaPassword") ?? "");
 
-  if (!nuevaPassword) throw new Error("Escribe una contraseña nueva.");
+  if (!nuevaPassword) return { error: "Escribe una contraseña nueva." };
 
   const usuario = await prisma.usuario.findFirst({ where: { telefono: celular, estado: "activo" } });
-  if (!usuario) throw new Error("No encontramos ninguna cuenta activa con ese celular.");
+  if (!usuario) return { error: "No encontramos ninguna cuenta activa con ese celular." };
 
   const { hash, salt } = generarHash(nuevaPassword);
   await prisma.usuario.update({
     where: { id: usuario.id },
     data: { passwordHash: hash, salt },
   });
+  return {};
 }

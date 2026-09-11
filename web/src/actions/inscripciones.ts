@@ -42,36 +42,36 @@ async function inscribirJugadorInterno(partidoId: number, jugadorId: number, cup
   });
 }
 
-export async function confirmarAsistencia(partidoId: number) {
+export async function confirmarAsistencia(partidoId: number): Promise<{ error?: string }> {
   const usuario = await requireLogin();
   const jugador = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
-  if (!jugador) throw new Error("No tienes perfil de jugador.");
+  if (!jugador) return { error: "No tienes perfil de jugador." };
 
   const tieneMultaPendiente = await prisma.multa.findFirst({
     where: { jugadorId: jugador.id, tipo: "no_asistio", estado: { not: "pagado" } },
   });
   if (tieneMultaPendiente) {
-    throw new Error("Tienes una multa por no asistencia sin pagar — no puedes confirmar.");
+    return { error: "Tienes una multa por no asistencia sin pagar — no puedes confirmar." };
   }
 
   const partido = await prisma.partido.findUniqueOrThrow({ where: { id: partidoId } });
-  const estado = await inscribirJugadorInterno(partidoId, jugador.id, partido.cupoMax);
+  await inscribirJugadorInterno(partidoId, jugador.id, partido.cupoMax);
   revalidatePath("/dashboard/partidos");
-  return estado;
+  return {};
 }
 
-export async function agregarJugadorAPartido(partidoId: number, jugadorId: number) {
+export async function agregarJugadorAPartido(partidoId: number, jugadorId: number): Promise<{ error?: string }> {
   await requireAdmin();
   const tieneMultaPendiente = await prisma.multa.findFirst({
     where: { jugadorId, tipo: "no_asistio", estado: { not: "pagado" } },
   });
   if (tieneMultaPendiente) {
-    throw new Error("Ese jugador tiene una multa por no asistencia sin pagar.");
+    return { error: "Ese jugador tiene una multa por no asistencia sin pagar." };
   }
   const partido = await prisma.partido.findUniqueOrThrow({ where: { id: partidoId } });
-  const estado = await inscribirJugadorInterno(partidoId, jugadorId, partido.cupoMax);
+  await inscribirJugadorInterno(partidoId, jugadorId, partido.cupoMax);
   revalidatePath("/dashboard/partidos");
-  return estado;
+  return {};
 }
 
 export async function cancelarInscripcion(inscripcionId: number) {

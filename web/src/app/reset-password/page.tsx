@@ -33,11 +33,11 @@ export default function ResetPasswordPage() {
             action={(fd) => {
               setError(null);
               startTransition(async () => {
-                try {
-                  await restablecerPassword(fd);
+                const resultado = await restablecerPassword(fd);
+                if (resultado?.error) {
+                  setError(resultado.error);
+                } else {
                   setExito(true);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Error");
                 }
               });
             }}

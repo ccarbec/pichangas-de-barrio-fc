@@ -52,7 +52,8 @@ export function Sidebar({
     <>
       <div className="mb-6 flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">⚽</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.jpg" alt="Pichangas de Barrio FC" className="h-9 w-9 rounded-lg object-cover" />
           <span className="text-sm font-bold tracking-wide">PICHANGAS DE BARRIO FC</span>
         </div>
         <button onClick={onCerrar} className="text-[var(--muted)] md:hidden">

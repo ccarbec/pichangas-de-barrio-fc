@@ -38,12 +38,12 @@ export async function cambiarEstadoEstadio(estadioId: number, activar: boolean) 
   revalidatePath("/dashboard/configuracion");
 }
 
-export async function subirFotoEstadio(formData: FormData) {
+export async function subirFotoEstadio(formData: FormData): Promise<{ error?: string }> {
   await requireAdmin();
   const estadioId = Number(formData.get("estadioId"));
   const archivo = formData.get("foto") as File | null;
-  if (!archivo || archivo.size === 0) throw new Error("Selecciona una foto.");
-  if (archivo.size > 5 * 1024 * 1024) throw new Error("La foto pesa más de 5MB.");
+  if (!archivo || archivo.size === 0) return { error: "Selecciona una foto." };
+  if (archivo.size > 5 * 1024 * 1024) return { error: "La foto pesa más de 5MB." };
 
   const bytes = Buffer.from(await archivo.arrayBuffer());
   await prisma.estadio.update({
@@ -51,4 +51,5 @@ export async function subirFotoEstadio(formData: FormData) {
     data: { fotoImg: bytes, fotoMime: archivo.type },
   });
   revalidatePath("/dashboard/configuracion");
+  return {};
 }

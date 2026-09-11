@@ -6,12 +6,12 @@ import { requireAdmin, requireLogin } from "@/lib/require-auth";
 import { generarHash, verificarPassword } from "@/lib/auth-crypto";
 import { normalizarTelefono } from "@/lib/telefono";
 
-export async function crearJugadorManual(formData: FormData) {
+export async function crearJugadorManual(formData: FormData): Promise<{ error?: string }> {
   await requireAdmin();
 
   const telefono = normalizarTelefono(String(formData.get("telefono") ?? ""));
   const existente = await prisma.usuario.findUnique({ where: { telefono } });
-  if (existente) throw new Error("Ya existe una cuenta con ese celular.");
+  if (existente) return { error: "Ya existe una cuenta con ese celular." };
 
   const { hash, salt } = generarHash(String(formData.get("password") ?? ""));
 
@@ -36,6 +36,7 @@ export async function crearJugadorManual(formData: FormData) {
   });
 
   revalidatePath("/dashboard/miembros");
+  return {};
 }
 
 export async function actualizarJugador(formData: FormData) {
@@ -85,11 +86,11 @@ export async function cambiarEstadoJugador(jugadorId: number, activar: boolean) 
   revalidatePath("/dashboard/miembros");
 }
 
-export async function eliminarJugador(jugadorId: number) {
+export async function eliminarJugador(jugadorId: number): Promise<{ error?: string }> {
   await requireAdmin();
   const tieneHistorial = await prisma.inscripcion.findFirst({ where: { jugadorId } });
   if (tieneHistorial) {
-    throw new Error("Este jugador ya tiene partidos registrados — inactívalo en vez de eliminarlo.");
+    return { error: "Este jugador ya tiene partidos registrados — inactívalo en vez de eliminarlo." };
   }
   const jugador = await prisma.jugador.findUniqueOrThrow({ where: { id: jugadorId } });
   await prisma.$transaction([
@@ -98,18 +99,19 @@ export async function eliminarJugador(jugadorId: number) {
     prisma.usuario.delete({ where: { id: jugador.usuarioId } }),
   ]);
   revalidatePath("/dashboard/miembros");
+  return {};
 }
 
-export async function subirFotoJugador(formData: FormData) {
+export async function subirFotoJugador(formData: FormData): Promise<{ error?: string }> {
   const usuario = await requireLogin();
   const jugadorId = Number(formData.get("jugadorId"));
   if (usuario.rol !== "admin") {
     const propio = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
-    if (!propio || propio.id !== jugadorId) throw new Error("No autorizado.");
+    if (!propio || propio.id !== jugadorId) return { error: "No autorizado." };
   }
   const archivo = formData.get("foto") as File | null;
-  if (!archivo || archivo.size === 0) throw new Error("Selecciona una foto.");
-  if (archivo.size > 5 * 1024 * 1024) throw new Error("La foto pesa más de 5MB.");
+  if (!archivo || archivo.size === 0) return { error: "Selecciona una foto." };
+  if (archivo.size > 5 * 1024 * 1024) return { error: "La foto pesa más de 5MB." };
 
   const bytes = Buffer.from(await archivo.arrayBuffer());
   await prisma.jugador.update({
@@ -118,12 +120,13 @@ export async function subirFotoJugador(formData: FormData) {
   });
   revalidatePath("/dashboard/miembros");
   revalidatePath("/dashboard/perfil");
+  return {};
 }
 
-export async function actualizarMiPerfil(formData: FormData) {
+export async function actualizarMiPerfil(formData: FormData): Promise<{ error?: string }> {
   const usuario = await requireLogin();
   const jugador = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
-  if (!jugador) throw new Error("No tienes perfil de jugador.");
+  if (!jugador) return { error: "No tienes perfil de jugador." };
 
   const nombres = String(formData.get("nombres") ?? "").trim();
 
@@ -144,22 +147,24 @@ export async function actualizarMiPerfil(formData: FormData) {
 
   revalidatePath("/dashboard/perfil");
   revalidatePath("/dashboard/miembros");
+  return {};
 }
 
-export async function cambiarMiPassword(formData: FormData) {
+export async function cambiarMiPassword(formData: FormData): Promise<{ error?: string }> {
   const usuario = await requireLogin();
   const passwordActual = String(formData.get("passwordActual") ?? "");
   const passwordNueva = String(formData.get("passwordNueva") ?? "");
 
-  if (!passwordNueva) throw new Error("Escribe una contraseña nueva.");
+  if (!passwordNueva) return { error: "Escribe una contraseña nueva." };
 
   const usuarioCompleto = await prisma.usuario.findUniqueOrThrow({ where: { id: usuario.id } });
   if (!verificarPassword(passwordActual, usuarioCompleto.passwordHash, usuarioCompleto.salt)) {
-    throw new Error("Tu contraseña actual no es correcta.");
+    return { error: "Tu contraseña actual no es correcta." };
   }
 
   const { hash, salt } = generarHash(passwordNueva);
   await prisma.usuario.update({ where: { id: usuario.id }, data: { passwordHash: hash, salt } });
+  return {};
 }
 
 export async function activarMiPerfil(apodo: string, posicion: string) {

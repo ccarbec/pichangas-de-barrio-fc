@@ -7,21 +7,21 @@ import { requireAdmin } from "@/lib/require-auth";
 const MAX_BYTES_FOTO = 5 * 1024 * 1024;
 const MAX_BYTES_VIDEO = 20 * 1024 * 1024;
 
-export async function subirGaleria(formData: FormData) {
+export async function subirGaleria(formData: FormData): Promise<{ error?: string }> {
   const admin = await requireAdmin();
 
   const archivo = formData.get("archivo") as File | null;
-  if (!archivo || archivo.size === 0) throw new Error("Selecciona una foto o video.");
+  if (!archivo || archivo.size === 0) return { error: "Selecciona una foto o video." };
 
   const esVideo = archivo.type.startsWith("video/");
   const esFoto = archivo.type.startsWith("image/");
-  if (!esVideo && !esFoto) throw new Error("Solo se aceptan fotos o videos.");
+  if (!esVideo && !esFoto) return { error: "Solo se aceptan fotos o videos." };
 
   const limite = esVideo ? MAX_BYTES_VIDEO : MAX_BYTES_FOTO;
   if (archivo.size > limite) {
-    throw new Error(
-      `El archivo pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es ${limite / 1024 / 1024} MB para ${esVideo ? "videos" : "fotos"}.`
-    );
+    return {
+      error: `El archivo pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es ${limite / 1024 / 1024} MB para ${esVideo ? "videos" : "fotos"}.`,
+    };
   }
 
   const partidoIdRaw = formData.get("partidoId");
@@ -42,6 +42,7 @@ export async function subirGaleria(formData: FormData) {
   });
 
   revalidatePath("/dashboard/galeria");
+  return {};
 }
 
 export async function eliminarGaleriaItem(id: number) {

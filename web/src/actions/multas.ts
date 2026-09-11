@@ -6,14 +6,14 @@ import { requireAdmin, requireLogin } from "@/lib/require-auth";
 
 const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
 
-export async function subirComprobanteMulta(formData: FormData) {
+export async function subirComprobanteMulta(formData: FormData): Promise<{ error?: string }> {
   await requireLogin();
   const multaId = Number(formData.get("multaId"));
   const archivo = formData.get("comprobante") as File | null;
 
-  if (!archivo || archivo.size === 0) throw new Error("Sube un comprobante.");
+  if (!archivo || archivo.size === 0) return { error: "Sube un comprobante." };
   if (archivo.size > MAX_BYTES_IMAGEN) {
-    throw new Error(`La imagen pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es 5 MB.`);
+    return { error: `La imagen pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es 5 MB.` };
   }
   const bytes = Buffer.from(await archivo.arrayBuffer());
 
@@ -28,6 +28,7 @@ export async function subirComprobanteMulta(formData: FormData) {
     },
   });
   revalidatePath("/dashboard/partidos");
+  return {};
 }
 
 export async function marcarMultaPagadaEfectivo(multaId: number) {

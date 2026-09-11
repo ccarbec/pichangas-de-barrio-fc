@@ -67,7 +67,10 @@ export function PartidoAdmin({
     startTransition(async () => {
       setError(null);
       try {
-        await fn();
+        const resultado = await fn();
+        if (resultado && typeof resultado === "object" && "error" in resultado && resultado.error) {
+          setError(String(resultado.error));
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
       }
