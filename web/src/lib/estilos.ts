@@ -6,6 +6,12 @@ export function nombreCompleto(p: { apellidos?: string | null; apodo?: string | 
   return base;
 }
 
+export function esArquero(posicion?: string | null): boolean {
+  if (!posicion) return false;
+  const p = posicion.toLowerCase();
+  return p.includes("arquero") || p.includes("portero");
+}
+
 export function emojiPosicion(posicion?: string | null) {
   switch (posicion) {
     case "Arquero":

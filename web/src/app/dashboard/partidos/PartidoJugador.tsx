@@ -25,10 +25,14 @@ type Inscripcion = {
 export function PartidoJugador({
   partido,
   inscripcion,
+  confirmados,
+  arquerosConfirmados,
 }: {
   partido: Partido;
   jugadorId: number;
   inscripcion: Inscripcion;
+  confirmados: number;
+  arquerosConfirmados: number;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +46,9 @@ export function PartidoJugador({
             {partido.fecha} · {partido.hora} — {partido.cancha}
           </p>
           <p className="text-sm text-[var(--muted)]">S/ {partido.costoPorJugador.toFixed(2)} por jugador</p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Cupo {confirmados}/{partido.cupoMax} · 🧤 Arqueros {arquerosConfirmados}/2
+          </p>
           {partido.notas && <p className="mt-1 text-xs text-[var(--muted)]">{partido.notas}</p>}
           {inscritoActivo && inscripcion && (
             <div className="mt-2">

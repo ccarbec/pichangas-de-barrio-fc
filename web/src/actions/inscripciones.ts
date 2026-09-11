@@ -3,14 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
+import { esArquero } from "@/lib/estilos";
+
+const MAX_ARQUEROS_POR_PARTIDO = 2;
 
 async function inscribirJugadorInterno(partidoId: number, jugadorId: number, cupoMax: number) {
   return prisma.$transaction(async (tx) => {
+    const jugador = await tx.jugador.findUniqueOrThrow({ where: { id: jugadorId } });
     const existente = await tx.inscripcion.findUnique({
       where: { partidoId_jugadorId: { partidoId, jugadorId } },
     });
-    const confirmados = await tx.inscripcion.count({ where: { partidoId, estado: "confirmado" } });
-    const nuevoEstado = confirmados < cupoMax ? "confirmado" : "lista_espera";
+    const confirmados = await tx.inscripcion.findMany({
+      where: { partidoId, estado: "confirmado" },
+      include: { jugador: true },
+    });
+
+    let nuevoEstado: "confirmado" | "lista_espera";
+    if (confirmados.length >= cupoMax) {
+      nuevoEstado = "lista_espera";
+    } else if (
+      esArquero(jugador.posicion) &&
+      confirmados.filter((i) => esArquero(i.jugador.posicion)).length >= MAX_ARQUEROS_POR_PARTIDO
+    ) {
+      nuevoEstado = "lista_espera";
+    } else {
+      nuevoEstado = "confirmado";
+    }
 
     if (existente) {
       await tx.inscripcion.update({
@@ -66,10 +84,22 @@ export async function cancelarInscripcion(inscripcionId: number) {
 
     if (inscripcion.estado !== "confirmado") return null;
 
-    const siguiente = await tx.inscripcion.findFirst({
+    const espera = await tx.inscripcion.findMany({
       where: { partidoId: inscripcion.partidoId, estado: "lista_espera" },
+      include: { jugador: true },
       orderBy: { fechaInscripcion: "asc" },
     });
+    if (espera.length === 0) return null;
+
+    const confirmados = await tx.inscripcion.findMany({
+      where: { partidoId: inscripcion.partidoId, estado: "confirmado" },
+      include: { jugador: true },
+    });
+    const arquerosConfirmados = confirmados.filter((i) => esArquero(i.jugador.posicion)).length;
+
+    const siguiente = espera.find(
+      (i) => !esArquero(i.jugador.posicion) || arquerosConfirmados < MAX_ARQUEROS_POR_PARTIDO
+    );
     if (!siguiente) return null;
 
     await tx.inscripcion.update({ where: { id: siguiente.id }, data: { estado: "confirmado" } });

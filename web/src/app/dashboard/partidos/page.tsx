@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { obtenerUsuarioActual } from "@/lib/session";
+import { esArquero } from "@/lib/estilos";
 import { NuevoPartidoForm } from "./NuevoPartidoForm";
 import { PartidoAdmin } from "./PartidoAdmin";
 import { PartidoJugador } from "./PartidoJugador";
@@ -60,6 +61,17 @@ export default async function PartidosPage() {
     }
   }
 
+  const confirmadosPorPartido = new Map<number, number>();
+  const arquerosConfirmadosPorPartido = new Map<number, number>();
+  for (const [partidoId, lista] of inscripcionesPorPartido) {
+    const confirmadosDelPartido = lista.filter((i) => i.estado === "confirmado");
+    confirmadosPorPartido.set(partidoId, confirmadosDelPartido.length);
+    arquerosConfirmadosPorPartido.set(
+      partidoId,
+      confirmadosDelPartido.filter((i) => esArquero(i.jugador.posicion)).length
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -90,6 +102,8 @@ export default async function PartidosPage() {
               partido={partido}
               jugadorId={jugadorActual.id}
               inscripcion={miInscripcionPorPartido.get(partido.id) ?? null}
+              confirmados={confirmadosPorPartido.get(partido.id) ?? 0}
+              arquerosConfirmados={arquerosConfirmadosPorPartido.get(partido.id) ?? 0}
             />
           ) : null
         )}

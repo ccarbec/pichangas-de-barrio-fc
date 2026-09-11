@@ -5,6 +5,7 @@ import { aDataUrl } from "@/lib/imagenes";
 import { PagosPendientesTab } from "./PagosPendientesTab";
 import { MultasTab } from "./MultasTab";
 import { CuadreTab } from "./CuadreTab";
+import { PagosPorPartidoTab } from "./PagosPorPartidoTab";
 
 export default async function PagosPage() {
   const usuario = await obtenerUsuarioActual();
@@ -59,6 +60,12 @@ export default async function PagosPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Pagos</h1>
       <PagosPendientesTab pagos={pagosData} />
+      <PagosPorPartidoTab
+        partidos={partidos.map((p) => ({
+          id: p.id,
+          etiqueta: `${p.fecha} ${p.hora} — ${p.cancha} (${p.estado})`,
+        }))}
+      />
       <MultasTab pendientesVerificacion={multasVerifData} todasPendientes={multasDebeData} />
       <CuadreTab
         partidos={partidos.map((p) => ({

@@ -7,7 +7,7 @@ import { marcarPagoManual } from "@/actions/pagos";
 import { marcarMultaPagadaEfectivo } from "@/actions/multas";
 import { AsistenciaSelect } from "./AsistenciaSelect";
 import { Badge } from "../../components/Badge";
-import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO, emojiPosicion, nombreCompleto } from "@/lib/estilos";
+import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO, emojiPosicion, esArquero, nombreCompleto } from "@/lib/estilos";
 
 const ETIQUETA_ASISTENCIA_EXCEL: Record<string, string> = {
   llego: "Llegó",
@@ -54,6 +54,7 @@ export function PartidoAdmin({
   const [autorizarCierre, setAutorizarCierre] = useState(false);
 
   const confirmados = inscritos.filter((i) => i.estado === "confirmado");
+  const arquerosConfirmados = confirmados.filter((i) => esArquero(i.jugador.posicion)).length;
   const idsEnPartido = new Set(inscritos.map((i) => i.jugadorId));
   const disponibles = jugadoresRegistrados.filter((j) => !idsEnPartido.has(j.id));
   const multasPorJugador = new Map(multas.map((m) => [m.jugadorId, m]));
@@ -108,8 +109,8 @@ export function PartidoAdmin({
             />
           </div>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Cupo {confirmados.length}/{partido.cupoMax} · Cancha S/ {partido.costoCancha.toFixed(2)} · S/{" "}
-            {partido.costoPorJugador.toFixed(2)} por jugador
+            Cupo {confirmados.length}/{partido.cupoMax} · 🧤 Arqueros {arquerosConfirmados}/2 · Cancha S/{" "}
+            {partido.costoCancha.toFixed(2)} · S/ {partido.costoPorJugador.toFixed(2)} por jugador
           </p>
         </div>
 

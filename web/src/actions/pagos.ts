@@ -111,6 +111,24 @@ export async function obtenerCuadre(partidoId: number) {
   };
 }
 
+export async function obtenerPagosDePartido(partidoId: number) {
+  await requireAdmin();
+  const inscritos = await prisma.inscripcion.findMany({
+    where: { partidoId, estado: { not: "cancelado" } },
+    include: { jugador: { include: { usuario: true } }, pago: true },
+    orderBy: [{ jugador: { apellidos: "asc" } }],
+  });
+  return inscritos.map((i) => ({
+    id: i.id,
+    nombre: `${i.jugador.usuario.nombre} ${i.jugador.apellidos}`.trim(),
+    telefono: i.jugador.usuario.telefono,
+    estadoInscripcion: i.estado,
+    monto: i.pago?.monto ?? null,
+    estadoPago: i.pago?.estado ?? "sin_pago",
+    metodoPago: i.pago?.metodoPago ?? null,
+  }));
+}
+
 export async function rechazarPago(pagoId: number, nota: string) {
   const admin = await requireAdmin();
   await prisma.pago.update({
