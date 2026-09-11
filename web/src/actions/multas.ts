@@ -7,9 +7,19 @@ import { requireAdmin, requireLogin } from "@/lib/require-auth";
 const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
 
 export async function subirComprobanteMulta(formData: FormData): Promise<{ error?: string }> {
-  await requireLogin();
+  const usuario = await requireLogin();
   const multaId = Number(formData.get("multaId"));
   const archivo = formData.get("comprobante") as File | null;
+
+  if (usuario.rol !== "admin") {
+    const multa = await prisma.multa.findUnique({
+      where: { id: multaId },
+      select: { jugador: { select: { usuarioId: true } } },
+    });
+    if (!multa || multa.jugador.usuarioId !== usuario.id) {
+      return { error: "No autorizado." };
+    }
+  }
 
   if (!archivo || archivo.size === 0) return { error: "Sube un comprobante." };
   if (archivo.size > MAX_BYTES_IMAGEN) {

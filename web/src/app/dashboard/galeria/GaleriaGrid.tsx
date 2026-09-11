@@ -17,6 +17,7 @@ type Item = {
 export function GaleriaGrid({ items, esAdmin }: { items: Item[]; esAdmin: boolean }) {
   const [pending, startTransition] = useTransition();
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (items.length === 0) {
     return <EmptyState icon="📸" texto="Todavía no hay fotos ni videos en la galería." />;
@@ -24,13 +25,21 @@ export function GaleriaGrid({ items, esAdmin }: { items: Item[]; esAdmin: boolea
 
   function eliminar(id: number) {
     setEliminandoId(id);
+    setError(null);
     startTransition(async () => {
-      await eliminarGaleriaItem(id);
-      setEliminandoId(null);
+      try {
+        await eliminarGaleriaItem(id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Error al quitar el archivo.");
+      } finally {
+        setEliminandoId(null);
+      }
     });
   }
 
   return (
+    <div className="flex flex-col gap-4">
+    {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
         <div key={item.id} className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
@@ -62,6 +71,7 @@ export function GaleriaGrid({ items, esAdmin }: { items: Item[]; esAdmin: boolea
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 }

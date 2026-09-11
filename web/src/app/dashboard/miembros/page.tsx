@@ -8,15 +8,16 @@ export default async function MiembrosPage() {
   const usuario = await obtenerUsuarioActual();
   if (!usuario || usuario.rol !== "admin") redirect("/dashboard");
 
-  const jugadores = await prisma.jugador.findMany({
-    orderBy: [{ apellidos: "asc" }, { usuario: { nombre: "asc" } }],
-    include: { usuario: true },
-  });
-
-  const jugadoresConHistorial = await prisma.inscripcion.findMany({
-    select: { jugadorId: true },
-    distinct: ["jugadorId"],
-  });
+  const [jugadores, jugadoresConHistorial] = await Promise.all([
+    prisma.jugador.findMany({
+      orderBy: [{ apellidos: "asc" }, { usuario: { nombre: "asc" } }],
+      include: { usuario: true },
+    }),
+    prisma.inscripcion.findMany({
+      select: { jugadorId: true },
+      distinct: ["jugadorId"],
+    }),
+  ]);
   const idsConHistorial = new Set(jugadoresConHistorial.map((i) => i.jugadorId));
 
   const data = jugadores.map((j) => ({

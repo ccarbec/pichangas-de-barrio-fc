@@ -9,11 +9,17 @@ type Partido = { id: number; etiqueta: string; costoCancha: number };
 export function CuadreTab({ partidos }: { partidos: Partido[] }) {
   const [partidoId, setPartidoId] = useState(partidos[0]?.id);
   const [cuadre, setCuadre] = useState<{ recaudado: number; pendiente: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const partido = partidos.find((p) => p.id === partidoId);
 
   useEffect(() => {
     if (!partidoId) return;
-    obtenerCuadre(partidoId).then(setCuadre);
+    obtenerCuadre(partidoId)
+      .then((r) => {
+        setCuadre(r);
+        setError(null);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Error al cargar el cuadre."));
   }, [partidoId]);
 
   if (partidos.length === 0) {
@@ -39,6 +45,8 @@ export function CuadreTab({ partidos }: { partidos: Partido[] }) {
           </option>
         ))}
       </select>
+
+      {error && <p className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
 
       {cuadre && partido && (
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">

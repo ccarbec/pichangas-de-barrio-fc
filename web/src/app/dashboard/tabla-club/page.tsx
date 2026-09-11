@@ -5,8 +5,12 @@ import { EmptyState } from "../../components/EmptyState";
 export default async function TablaClubPage() {
   const jugadores = await prisma.jugador.findMany({
     where: { estado: "activo" },
-    include: {
-      usuario: true,
+    select: {
+      id: true,
+      apellidos: true,
+      apodo: true,
+      posicion: true,
+      usuario: { select: { nombre: true } },
       inscripciones: { select: { asistio: true } },
       multas: { select: { estado: true } },
     },

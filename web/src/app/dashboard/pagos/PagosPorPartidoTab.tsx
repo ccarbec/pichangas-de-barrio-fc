@@ -22,10 +22,16 @@ type FilaPago = {
 export function PagosPorPartidoTab({ partidos }: { partidos: Partido[] }) {
   const [partidoId, setPartidoId] = useState(partidos[0]?.id);
   const [filas, setFilas] = useState<FilaPago[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!partidoId) return;
-    obtenerPagosDePartido(partidoId).then(setFilas);
+    obtenerPagosDePartido(partidoId)
+      .then((r) => {
+        setFilas(r);
+        setError(null);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Error al cargar los pagos."));
   }, [partidoId]);
 
   if (partidos.length === 0) {
@@ -66,7 +72,14 @@ export function PagosPorPartidoTab({ partidos }: { partidos: Partido[] }) {
             </tr>
           </thead>
           <tbody>
-            {filas === null && (
+            {error && (
+              <tr>
+                <td colSpan={5} className="py-3 text-[var(--danger)]">
+                  {error}
+                </td>
+              </tr>
+            )}
+            {filas === null && !error && (
               <tr>
                 <td colSpan={5} className="py-3 text-[var(--muted)]">
                   Cargando…

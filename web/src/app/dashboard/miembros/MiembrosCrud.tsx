@@ -151,7 +151,10 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                   {jugadoresFiltrados.map((j) => (
                   <tr
                     key={j.id}
-                    onClick={() => setSeleccionId(j.id)}
+                    onClick={() => {
+                      setSeleccionId(j.id);
+                      setConfirmarEliminar(false);
+                    }}
                     className={`cursor-pointer border-b border-[var(--border)]/50 last:border-0 ${seleccionId === j.id ? "bg-[var(--surface-hover)]" : ""}`}
                   >
                     <td className="p-3 font-medium whitespace-nowrap">

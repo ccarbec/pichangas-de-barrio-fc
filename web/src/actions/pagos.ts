@@ -3,15 +3,26 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
+import { nombreCompleto } from "@/lib/estilos";
 
 const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
 
 export async function registrarPago(formData: FormData): Promise<{ error?: string }> {
-  await requireLogin();
+  const usuario = await requireLogin();
 
   const inscripcionId = Number(formData.get("inscripcionId"));
   const monto = Number(formData.get("monto"));
   const archivo = formData.get("comprobante") as File | null;
+
+  if (usuario.rol !== "admin") {
+    const inscripcion = await prisma.inscripcion.findUnique({
+      where: { id: inscripcionId },
+      select: { jugador: { select: { usuarioId: true } } },
+    });
+    if (!inscripcion || inscripcion.jugador.usuarioId !== usuario.id) {
+      return { error: "No autorizado." };
+    }
+  }
 
   if (!archivo || archivo.size === 0) return { error: "Sube un comprobante." };
   if (archivo.size > MAX_BYTES_IMAGEN) {
@@ -114,12 +125,19 @@ export async function obtenerPagosDePartido(partidoId: number) {
   await requireAdmin();
   const inscritos = await prisma.inscripcion.findMany({
     where: { partidoId, estado: { not: "cancelado" } },
-    include: { jugador: { include: { usuario: true } }, pago: true },
+    select: {
+      id: true,
+      estado: true,
+      jugador: {
+        select: { apellidos: true, apodo: true, usuario: { select: { nombre: true, telefono: true } } },
+      },
+      pago: { select: { id: true, monto: true, estado: true, metodoPago: true, comprobanteImg: true } },
+    },
     orderBy: [{ jugador: { apellidos: "asc" } }],
   });
   return inscritos.map((i) => ({
     id: i.id,
-    nombre: `${i.jugador.usuario.nombre} ${i.jugador.apellidos}`.trim(),
+    nombre: nombreCompleto(i.jugador),
     telefono: i.jugador.usuario.telefono,
     estadoInscripcion: i.estado,
     pagoId: i.pago?.id ?? null,

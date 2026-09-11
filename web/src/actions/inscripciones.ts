@@ -15,7 +15,7 @@ async function inscribirJugadorInterno(partidoId: number, jugadorId: number, cup
     });
     const confirmados = await tx.inscripcion.findMany({
       where: { partidoId, estado: "confirmado" },
-      include: { jugador: true },
+      select: { jugador: { select: { posicion: true } } },
     });
 
     let nuevoEstado: "confirmado" | "lista_espera";
@@ -86,14 +86,14 @@ export async function cancelarInscripcion(inscripcionId: number) {
 
     const espera = await tx.inscripcion.findMany({
       where: { partidoId: inscripcion.partidoId, estado: "lista_espera" },
-      include: { jugador: true },
+      select: { id: true, jugadorId: true, jugador: { select: { posicion: true } } },
       orderBy: { fechaInscripcion: "asc" },
     });
     if (espera.length === 0) return null;
 
     const confirmados = await tx.inscripcion.findMany({
       where: { partidoId: inscripcion.partidoId, estado: "confirmado" },
-      include: { jugador: true },
+      select: { jugador: { select: { posicion: true } } },
     });
     const arquerosConfirmados = confirmados.filter((i) => esArquero(i.jugador.posicion)).length;
 
@@ -111,7 +111,7 @@ export async function cancelarInscripcion(inscripcionId: number) {
   if (promovidoJugadorId == null) return null;
   const jugador = await prisma.jugador.findUnique({
     where: { id: promovidoJugadorId },
-    include: { usuario: true },
+    select: { apodo: true, usuario: { select: { nombre: true } } },
   });
   return jugador ? { nombre: jugador.usuario.nombre, apodo: jugador.apodo } : null;
 }
@@ -136,9 +136,9 @@ export async function reemplazarJugador(inscripcionNoLlegoId: number, jugadorRee
 export async function marcarAsistenciaMultiple(
   partidoId: number,
   cambios: { inscripcionId: number; jugadorId: number; estado: string | null }[]
-) {
+): Promise<{ error?: string }> {
   await requireAdmin();
-  if (cambios.length === 0) return;
+  if (cambios.length === 0) return {};
 
   const config = await prisma.clubConfig.findUnique({ where: { id: 1 } });
   const montoTardanza = config?.montoMultaTardanza ?? 5;
@@ -173,4 +173,5 @@ export async function marcarAsistenciaMultiple(
   });
 
   revalidatePath("/dashboard/partidos");
+  return {};
 }

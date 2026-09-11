@@ -10,6 +10,8 @@ export async function crearJugadorManual(formData: FormData): Promise<{ error?: 
   await requireAdmin();
 
   const telefono = normalizarTelefono(String(formData.get("telefono") ?? ""));
+  if (telefono.length !== 11) return { error: "Escribe un celular válido (9 dígitos)." };
+
   const existente = await prisma.usuario.findUnique({ where: { telefono } });
   if (existente) return { error: "Ya existe una cuenta con ese celular." };
 

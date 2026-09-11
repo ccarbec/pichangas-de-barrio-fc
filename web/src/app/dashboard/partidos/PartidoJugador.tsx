@@ -36,6 +36,7 @@ export function PartidoJugador({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [enviandoComprobante, setEnviandoComprobante] = useState(false);
   const inscritoActivo = inscripcion && inscripcion.estado !== "cancelado";
 
   return (
@@ -113,7 +114,9 @@ export function PartidoJugador({
             <form
               action={async (formData) => {
                 setError(null);
+                setEnviandoComprobante(true);
                 const resultado = await registrarPago(formData);
+                setEnviandoComprobante(false);
                 if (resultado?.error) setError(resultado.error);
               }}
               className="mt-3 flex flex-wrap items-center gap-3"
@@ -125,13 +128,15 @@ export function PartidoJugador({
                 name="comprobante"
                 accept="image/png,image/jpeg"
                 required
+                disabled={enviandoComprobante}
                 className="text-sm text-[var(--muted)]"
               />
               <button
                 type="submit"
-                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+                disabled={enviandoComprobante}
+                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
               >
-                Enviar comprobante
+                {enviandoComprobante ? "Enviando…" : "Enviar comprobante"}
               </button>
             </form>
           )}

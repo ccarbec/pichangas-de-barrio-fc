@@ -26,12 +26,23 @@ export default async function DashboardPage() {
       prisma.pago.count({ where: { estado: "pendiente" } }),
       prisma.jugador.findMany({
         take: 5,
-        orderBy: { id: "asc" },
-        include: { usuario: true },
+        orderBy: { id: "desc" },
+        select: {
+          id: true,
+          apellidos: true,
+          apodo: true,
+          estado: true,
+          usuario: { select: { nombre: true, rol: true } },
+        },
       }),
       prisma.jugador.findMany({
         where: { estado: "activo" },
-        include: { usuario: true, inscripciones: { select: { asistio: true } } },
+        select: {
+          apellidos: true,
+          apodo: true,
+          usuario: { select: { nombre: true } },
+          inscripciones: { select: { asistio: true } },
+        },
       }),
     ]);
 
@@ -114,7 +125,7 @@ export default async function DashboardPage() {
               {ultimosJugadores.map((j) => (
                 <tr key={j.id} className="border-b border-[var(--border)]/50 last:border-0">
                   <td className="py-3 font-medium whitespace-nowrap">
-                    {j.usuario.nombre} {j.apellidos}
+                    {nombreCompleto(j)}
                   </td>
                   <td className="py-3">
                     <Badge variant="role">{j.usuario.rol.toUpperCase()}</Badge>

@@ -7,6 +7,7 @@ import { marcarPagoManual } from "@/actions/pagos";
 import { marcarMultaPagadaEfectivo } from "@/actions/multas";
 import { AsistenciaSelect } from "./AsistenciaSelect";
 import { Badge } from "../../components/Badge";
+import { Toast } from "../../components/Toast";
 import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO, emojiPosicion, esArquero, nombreCompleto } from "@/lib/estilos";
 
 const ETIQUETA_ASISTENCIA_EXCEL: Record<string, string> = {
@@ -22,7 +23,7 @@ type Inscripcion = {
   estado: string;
   asistio: string | null;
   jugador: Jugador;
-  pago: { id: number; estado: string } | null;
+  pago: { id: number; estado: string; monto: number } | null;
 };
 type Multa = { id: number; jugadorId: number; tipo: string; monto: number; estado: string };
 type Partido = {
@@ -49,6 +50,7 @@ export function PartidoAdmin({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [verInscritos, setVerInscritos] = useState(false);
   const [reemplazoDe, setReemplazoDe] = useState<number | null>(null);
   const [autorizarCierre, setAutorizarCierre] = useState(false);
@@ -61,15 +63,17 @@ export function PartidoAdmin({
   const multasHuerfanas = multas.filter((m) => !idsEnPartido.has(m.jugadorId) && m.estado !== "pagado");
 
   const faltanPago = confirmados.filter((i) => i.pago?.estado !== "verificado" && i.asistio !== "no_llego").length;
-  const recaudado = inscritos.reduce((sum, i) => (i.pago?.estado === "verificado" ? sum + partido.costoPorJugador : sum), 0);
+  const recaudado = inscritos.reduce((sum, i) => (i.pago?.estado === "verificado" ? sum + i.pago.monto : sum), 0);
 
-  function run(fn: () => Promise<unknown>) {
+  function run(fn: () => Promise<unknown>, mensajeExito?: string) {
     startTransition(async () => {
       setError(null);
       try {
         const resultado = await fn();
         if (resultado && typeof resultado === "object" && "error" in resultado && resultado.error) {
           setError(String(resultado.error));
+        } else if (mensajeExito) {
+          setToast(mensajeExito);
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error");
@@ -100,6 +104,7 @@ export function PartidoAdmin({
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="font-semibold break-words">
@@ -121,14 +126,14 @@ export function PartidoAdmin({
           <div className="flex flex-wrap items-center gap-2">
             <button
               disabled={pending || (faltanPago > 0 && !autorizarCierre)}
-              onClick={() => run(() => cambiarEstadoPartido(partido.id, "jugado"))}
+              onClick={() => run(() => cambiarEstadoPartido(partido.id, "jugado"), "Pichanga cerrada.")}
               className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-40 disabled:hover:opacity-40"
             >
               ✅ Cerrar (jugado)
             </button>
             <button
               disabled={pending}
-              onClick={() => run(() => cambiarEstadoPartido(partido.id, "cancelado"))}
+              onClick={() => run(() => cambiarEstadoPartido(partido.id, "cancelado"), "Pichanga cancelada.")}
               className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs whitespace-nowrap text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
             >
               🚫 Cancelar
@@ -188,7 +193,21 @@ export function PartidoAdmin({
                     </Badge>
                     <button
                       disabled={pending}
-                      onClick={() => run(() => cancelarInscripcion(i.id))}
+                      onClick={() =>
+                        startTransition(async () => {
+                          setError(null);
+                          try {
+                            const promovido = await cancelarInscripcion(i.id);
+                            setToast(
+                              promovido
+                                ? `Quitado. ${nombreCompleto({ usuario: { nombre: promovido.nombre }, apodo: promovido.apodo })} subió de la lista de espera.`
+                                : "Jugador quitado del partido."
+                            );
+                          } catch (e) {
+                            setError(e instanceof Error ? e.message : "Error");
+                          }
+                        })
+                      }
                       className="text-xs whitespace-nowrap text-[var(--danger)] hover:underline"
                     >
                       🗑️ Quitar
@@ -201,7 +220,7 @@ export function PartidoAdmin({
                     {i.pago?.estado !== "verificado" && (
                       <button
                         disabled={pending}
-                        onClick={() => run(() => marcarPagoManual(i.id, partido.costoPorJugador))}
+                        onClick={() => run(() => marcarPagoManual(i.id, partido.costoPorJugador), "Pago registrado.")}
                         className="rounded-md border border-[var(--border)] px-2 py-1 text-xs transition-colors hover:border-[var(--accent)]"
                       >
                         💵 Pagó en efectivo
@@ -228,7 +247,7 @@ export function PartidoAdmin({
                     ) : (
                       <button
                         disabled={pending}
-                        onClick={() => run(() => marcarMultaPagadaEfectivo(multa.id))}
+                        onClick={() => run(() => marcarMultaPagadaEfectivo(multa.id), "Multa marcada como pagada.")}
                         className="rounded-md border border-[var(--border)] px-2 py-1 transition-colors hover:border-[var(--accent)]"
                       >
                         💵 Multa pagada (efectivo)
@@ -250,7 +269,7 @@ export function PartidoAdmin({
                           run(async () => {
                             await reemplazarJugador(i.id, jugadorId);
                             setReemplazoDe(null);
-                          })
+                          }, "Reemplazo confirmado.")
                         }
                         pending={pending}
                       />
@@ -276,7 +295,7 @@ export function PartidoAdmin({
                     </span>
                     <button
                       disabled={pending}
-                      onClick={() => run(() => marcarMultaPagadaEfectivo(m.id))}
+                      onClick={() => run(() => marcarMultaPagadaEfectivo(m.id), "Multa marcada como pagada.")}
                       className="rounded-md border border-[var(--border)] px-2 py-1 text-xs hover:border-[var(--accent)]"
                     >
                       💵 Marcar pagada
@@ -321,7 +340,7 @@ function AgregarJugador({
   disponibles: Jugador[];
   onError: (e: string | null) => void;
   pending: boolean;
-  run: (fn: () => Promise<unknown>) => void;
+  run: (fn: () => Promise<unknown>, mensajeExito?: string) => void;
 }) {
   const [elegido, setElegido] = useState(disponibles[0]?.id ?? 0);
   return (
@@ -339,7 +358,7 @@ function AgregarJugador({
       </select>
       <button
         disabled={pending}
-        onClick={() => run(() => agregarJugadorAPartido(partidoId, elegido))}
+        onClick={() => run(() => agregarJugadorAPartido(partidoId, elegido), "Jugador agregado.")}
         className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
       >
         Agregar
@@ -391,7 +410,7 @@ function RepetirForm({
 }: {
   partidoId: number;
   pending: boolean;
-  run: (fn: () => Promise<unknown>) => void;
+  run: (fn: () => Promise<unknown>, mensajeExito?: string) => void;
   duplicar: (id: number, fecha: string, hora: string) => Promise<void>;
 }) {
   const [fecha, setFecha] = useState("");
@@ -412,7 +431,7 @@ function RepetirForm({
       />
       <button
         disabled={pending || !fecha}
-        onClick={() => run(() => duplicar(partidoId, fecha, hora))}
+        onClick={() => run(() => duplicar(partidoId, fecha, hora), "Pichanga duplicada.")}
         className="rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold whitespace-nowrap text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
       >
         🔁 Duplicar

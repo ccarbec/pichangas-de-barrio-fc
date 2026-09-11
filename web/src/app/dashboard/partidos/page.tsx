@@ -11,9 +11,8 @@ export default async function PartidosPage() {
   if (!usuario) return null;
   const esAdmin = usuario.rol === "admin";
 
-  const jugadorActual = await prisma.jugador.findUnique({ where: { usuarioId: usuario.id } });
-
-  const [programados, historial, estadios, jugadoresRegistrados] = await Promise.all([
+  const [jugadorActual, programados, historial, estadios, jugadoresRegistrados] = await Promise.all([
+    prisma.jugador.findUnique({ where: { usuarioId: usuario.id } }),
     prisma.partido.findMany({ where: { estado: "programado" }, orderBy: [{ fecha: "asc" }, { hora: "asc" }] }),
     prisma.partido.findMany({
       where: { estado: { in: ["jugado", "cancelado"] } },
@@ -23,7 +22,13 @@ export default async function PartidosPage() {
     esAdmin
       ? prisma.jugador.findMany({
           where: { estado: "activo" },
-          include: { usuario: true },
+          select: {
+            id: true,
+            apellidos: true,
+            apodo: true,
+            posicion: true,
+            usuario: { select: { nombre: true, telefono: true } },
+          },
           orderBy: [{ apellidos: "asc" }],
         })
       : Promise.resolve([]),
@@ -35,7 +40,23 @@ export default async function PartidosPage() {
   const [inscripciones, multas] = await Promise.all([
     prisma.inscripcion.findMany({
       where: { partidoId: { in: partidoIds }, estado: { not: "cancelado" } },
-      include: { jugador: { include: { usuario: true } }, pago: true },
+      select: {
+        id: true,
+        partidoId: true,
+        jugadorId: true,
+        estado: true,
+        asistio: true,
+        jugador: {
+          select: {
+            id: true,
+            apellidos: true,
+            apodo: true,
+            posicion: true,
+            usuario: { select: { nombre: true, telefono: true } },
+          },
+        },
+        pago: { select: { id: true, estado: true, monto: true, nota: true } },
+      },
       orderBy: [{ jugador: { apellidos: "asc" } }],
     }),
     prisma.multa.findMany({ where: { partidoId: { in: partidoIds } } }),

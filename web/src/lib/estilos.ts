@@ -13,18 +13,13 @@ export function esArquero(posicion?: string | null): boolean {
 }
 
 export function emojiPosicion(posicion?: string | null) {
-  switch (posicion) {
-    case "Arquero":
-      return "🧤";
-    case "Defensa":
-      return "🛡️";
-    case "Mediocampo":
-      return "🎯";
-    case "Delantero":
-      return "⚽";
-    default:
-      return "🏃";
-  }
+  if (!posicion) return "🏃";
+  const p = posicion.toLowerCase();
+  if (esArquero(p)) return "🧤";
+  if (p.includes("defensa") || p.includes("lateral") || p.includes("central")) return "🛡️";
+  if (p.includes("volante") || p.includes("medio") || p.includes("mediocamp")) return "🎯";
+  if (p.includes("delantero") || p.includes("extremo") || p.includes("punta")) return "⚽";
+  return "🏃";
 }
 
 export const ETIQUETA_INSCRIPCION: Record<string, { texto: string; variant: "active" | "warning" | "neutral" }> = {
