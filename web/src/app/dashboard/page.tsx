@@ -41,7 +41,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold">Centro de Comando</h1>
-        <p className="text-sm text-[var(--muted)]">Datos en vivo de la base de prueba local.</p>
+        <p className="text-sm text-[var(--muted)]">Resumen del club en vivo.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

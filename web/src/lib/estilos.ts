@@ -34,6 +34,8 @@ export const ETIQUETA_PAGO: Record<string, { texto: string; variant: "active" | 
   rechazado: { texto: "Rechazado", variant: "danger" },
 };
 
+export const POSICIONES_SUGERIDAS = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"];
+
 export const ETIQUETAS_ASISTENCIA = [
   { value: "", label: "Sin marcar" },
   { value: "llego", label: "✅ Llegó" },

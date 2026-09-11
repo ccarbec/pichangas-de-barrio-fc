@@ -2,8 +2,7 @@
 
 import { useTransition } from "react";
 import { actualizarMiPerfil, subirFotoJugador } from "@/actions/jugadores";
-
-const POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"];
+import { POSICIONES_SUGERIDAS } from "@/lib/estilos";
 
 type Jugador = {
   id: number;
@@ -49,11 +48,17 @@ export function PerfilForm({ jugador }: { jugador: Jugador }) {
         </div>
         <div>
           <label className="mb-1 block text-xs text-[var(--muted)]">Posición</label>
-          <select name="posicion" defaultValue={jugador.posicion ?? "Cualquiera"} className={inputClass}>
-            {POSICIONES.map((p) => (
-              <option key={p} value={p}>{p}</option>
+          <datalist id="posiciones-sugeridas">
+            {POSICIONES_SUGERIDAS.map((p) => (
+              <option key={p} value={p} />
             ))}
-          </select>
+          </datalist>
+          <input
+            name="posicion"
+            list="posiciones-sugeridas"
+            defaultValue={jugador.posicion ?? ""}
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="mb-1 block text-xs text-[var(--muted)]">Hincha de qué equipo</label>

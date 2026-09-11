@@ -12,7 +12,7 @@ export default async function LoginPage({
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <span className="text-4xl">⚽</span>
           <h1 className="text-lg font-bold">PICHANGAS DE BARRIO FC</h1>
-          <p className="text-sm text-[var(--muted)]">Prueba de rediseño — panel del club</p>
+          <p className="text-sm text-[var(--muted)]">Panel del club</p>
         </div>
 
         <form action={login} className="flex flex-col gap-4">
@@ -44,10 +44,6 @@ export default async function LoginPage({
             Ingresar
           </button>
         </form>
-
-        <p className="mt-6 text-center text-xs text-[var(--muted)]">
-          Datos de prueba: admin 999999999 / demo123 · jugador 998880000 / jugador123
-        </p>
       </div>
     </main>
   );

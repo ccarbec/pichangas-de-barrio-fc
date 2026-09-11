@@ -2,12 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { activarMiPerfil } from "@/actions/jugadores";
-
-const POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"];
+import { POSICIONES_SUGERIDAS } from "@/lib/estilos";
 
 export function ActivarPerfilForm({ usuarioId }: { usuarioId: number }) {
   const [apodo, setApodo] = useState("");
-  const [posicion, setPosicion] = useState(POSICIONES[4]);
+  const [posicion, setPosicion] = useState("Cualquiera");
   const [pending, startTransition] = useTransition();
 
   return (
@@ -28,15 +27,17 @@ export function ActivarPerfilForm({ usuarioId }: { usuarioId: number }) {
       </div>
       <div>
         <label className="mb-1 block text-xs text-[var(--muted)]">Posición</label>
-        <select
+        <datalist id="posiciones-sugeridas">
+          {POSICIONES_SUGERIDAS.map((p) => (
+            <option key={p} value={p} />
+          ))}
+        </datalist>
+        <input
           value={posicion}
           onChange={(e) => setPosicion(e.target.value)}
+          list="posiciones-sugeridas"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-        >
-          {POSICIONES.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
+        />
       </div>
       <button
         type="submit"

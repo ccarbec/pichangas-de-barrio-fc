@@ -9,9 +9,7 @@ import {
   subirFotoJugador,
 } from "@/actions/jugadores";
 import { Badge } from "../../components/Badge";
-import { nombreCompleto } from "@/lib/estilos";
-
-const POSICIONES = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"];
+import { nombreCompleto, POSICIONES_SUGERIDAS } from "@/lib/estilos";
 
 type Jugador = {
   id: number;
@@ -51,6 +49,11 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <datalist id="posiciones-sugeridas">
+        {POSICIONES_SUGERIDAS.map((p) => (
+          <option key={p} value={p} />
+        ))}
+      </datalist>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Gestión Miembros</h1>
         <div className="flex gap-2">
@@ -89,11 +92,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
           <Campo label="Apodo"><input name="apodo" className={inputClass} /></Campo>
           <Campo label="Celular"><input name="telefono" required className={inputClass} /></Campo>
           <Campo label="Posición">
-            <select name="posicion" className={inputClass}>
-              {POSICIONES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            <input name="posicion" list="posiciones-sugeridas" placeholder="Ej: Volante, Cualquiera" className={inputClass} />
           </Campo>
           <Campo label="Contraseña inicial"><input name="password" type="password" required className={inputClass} /></Campo>
           <Campo label="Hincha de qué equipo"><input name="equipoHincha" className={inputClass} /></Campo>
@@ -164,11 +163,12 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                 <Campo label="Apellidos"><input name="apellidos" defaultValue={seleccionado.apellidos} className={inputClass} /></Campo>
                 <Campo label="Apodo"><input name="apodo" defaultValue={seleccionado.apodo ?? ""} className={inputClass} /></Campo>
                 <Campo label="Posición">
-                  <select name="posicion" defaultValue={seleccionado.posicion ?? "Cualquiera"} className={inputClass}>
-                    {POSICIONES.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
+                  <input
+                    name="posicion"
+                    list="posiciones-sugeridas"
+                    defaultValue={seleccionado.posicion ?? ""}
+                    className={inputClass}
+                  />
                 </Campo>
                 <Campo label="Hincha de qué equipo"><input name="equipoHincha" defaultValue={seleccionado.equipoHincha} className={inputClass} /></Campo>
                 <Campo label="Camiseta"><input name="camiseta" defaultValue={seleccionado.camiseta} className={inputClass} /></Campo>

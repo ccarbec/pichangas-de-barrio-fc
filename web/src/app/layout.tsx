@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pichangas de Barrio FC",
-  description: "Prueba de rediseño — panel del club",
+  description: "Panel del club",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
