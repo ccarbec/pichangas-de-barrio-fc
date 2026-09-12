@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
 const COOKIE = "pichangas_sesion";
+const COOKIE_VISTA = "pichangas_vista_jugador";
 const DIAS_DURACION_SESION = 30;
 
 export async function iniciarSesion(usuarioId: number) {
@@ -34,7 +35,34 @@ export async function obtenerUsuarioActual() {
   const limiteMs = DIAS_DURACION_SESION * 24 * 60 * 60 * 1000;
   if (Date.now() - creado > limiteMs) return null;
 
-  return sesion.usuario;
+  // Un admin puede "verse como jugador" (útil si también juega): esto
+  // reemplaza el rol efectivo en TODA la app (pantallas y Server Actions,
+  // vía requireAdmin) mientras dure la preferencia — no es solo visual.
+  // La cookie nunca puede subir a nadie a admin: solo aplica si el rol
+  // real en la base YA es admin.
+  const esAdminReal = sesion.usuario.rol === "admin";
+  const vistaJugador = esAdminReal && cookieStore.get(COOKIE_VISTA)?.value === "1";
+
+  return {
+    ...sesion.usuario,
+    rol: vistaJugador ? "jugador" : sesion.usuario.rol,
+    esAdminReal,
+    vistaJugador,
+  };
+}
+
+export async function cambiarVistaJugador(comoJugador: boolean) {
+  const cookieStore = await cookies();
+  if (comoJugador) {
+    cookieStore.set(COOKIE_VISTA, "1", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  } else {
+    cookieStore.delete(COOKIE_VISTA);
+  }
 }
 
 export async function cerrarSesion() {
@@ -44,4 +72,5 @@ export async function cerrarSesion() {
     await prisma.sesion.deleteMany({ where: { token } });
     cookieStore.delete(COOKIE);
   }
+  cookieStore.delete(COOKIE_VISTA);
 }

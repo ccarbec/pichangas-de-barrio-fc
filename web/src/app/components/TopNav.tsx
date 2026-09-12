@@ -1,20 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Menu, LogOut, UserCircle } from "lucide-react";
-import { logout } from "@/actions/auth";
+import { Menu, LogOut, UserCircle, Eye } from "lucide-react";
+import { logout, alternarVistaJugador } from "@/actions/auth";
 
 export function TopNav({
   nombre,
   esAdmin,
+  esAdminReal,
+  vistaJugador,
   onAbrirMenu,
 }: {
   nombre: string;
   esAdmin: boolean;
+  esAdminReal: boolean;
+  vistaJugador: boolean;
   onAbrirMenu: () => void;
 }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   return (
     <header className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)]/40 px-4 py-3 sm:px-6">
@@ -43,7 +48,20 @@ export function TopNav({
           {menuAbierto && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuAbierto(false)} />
-              <div className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-xl">
+              <div className="absolute right-0 top-10 z-20 w-52 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-xl">
+                {esAdminReal && (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      setMenuAbierto(false);
+                      startTransition(() => alternarVistaJugador(!vistaJugador));
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] disabled:opacity-50"
+                  >
+                    <Eye size={16} /> {vistaJugador ? "Ver como admin" : "Ver como jugador"}
+                  </button>
+                )}
                 <form action={logout}>
                   <button
                     type="submit"

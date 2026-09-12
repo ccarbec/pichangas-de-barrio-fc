@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { cerrarSesion, iniciarSesion } from "@/lib/session";
+import { revalidatePath } from "next/cache";
+import { cambiarVistaJugador, cerrarSesion, iniciarSesion, obtenerUsuarioActual } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { normalizarTelefono } from "@/lib/telefono";
 import { generarHash } from "@/lib/auth-crypto";
@@ -9,6 +10,16 @@ import { generarHash } from "@/lib/auth-crypto";
 export async function logout() {
   await cerrarSesion();
   redirect("/login");
+}
+
+// Solo un admin de verdad puede prender/apagar esto — la cookie en sí ya
+// no puede subir a nadie a admin (ver obtenerUsuarioActual), pero además
+// se valida acá para no depender solo de eso.
+export async function alternarVistaJugador(comoJugador: boolean) {
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario?.esAdminReal) return;
+  await cambiarVistaJugador(comoJugador);
+  revalidatePath("/dashboard");
 }
 
 export async function registrarJugador(formData: FormData): Promise<{ error?: string }> {

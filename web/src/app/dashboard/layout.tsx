@@ -9,7 +9,12 @@ export default async function DashboardLayout(props: LayoutProps<"/dashboard">) 
   }
 
   return (
-    <AppShell nombre={usuario.nombre} esAdmin={usuario.rol === "admin"}>
+    <AppShell
+      nombre={usuario.nombre}
+      esAdmin={usuario.rol === "admin"}
+      esAdminReal={usuario.esAdminReal}
+      vistaJugador={usuario.vistaJugador}
+    >
       {props.children}
     </AppShell>
   );
