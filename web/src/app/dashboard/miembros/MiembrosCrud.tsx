@@ -225,21 +225,13 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
 
                 <div className="col-span-full">
                   <p className="mb-2 text-xs font-semibold uppercase text-[var(--muted)]">
-                    ⚖️ Estadísticas (1-5, para armar equipos parejos)
+                    ⚖️ Estadísticas (para armar equipos parejos)
                   </p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <Campo label="Velocidad">
-                      <input name="statVelocidad" type="number" min={1} max={5} defaultValue={seleccionado.statVelocidad} className={inputClass} />
-                    </Campo>
-                    <Campo label="Técnica">
-                      <input name="statTecnica" type="number" min={1} max={5} defaultValue={seleccionado.statTecnica} className={inputClass} />
-                    </Campo>
-                    <Campo label="Defensa">
-                      <input name="statDefensa" type="number" min={1} max={5} defaultValue={seleccionado.statDefensa} className={inputClass} />
-                    </Campo>
-                    <Campo label="Físico">
-                      <input name="statFisico" type="number" min={1} max={5} defaultValue={seleccionado.statFisico} className={inputClass} />
-                    </Campo>
+                  <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
+                    <CampoEstrellas label="Velocidad" name="statVelocidad" valorInicial={seleccionado.statVelocidad} />
+                    <CampoEstrellas label="Técnica" name="statTecnica" valorInicial={seleccionado.statTecnica} />
+                    <CampoEstrellas label="Defensa" name="statDefensa" valorInicial={seleccionado.statDefensa} />
+                    <CampoEstrellas label="Físico" name="statFisico" valorInicial={seleccionado.statFisico} />
                   </div>
                 </div>
 
@@ -308,6 +300,29 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="mb-1 block text-xs text-[var(--muted)]">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function CampoEstrellas({ label, name, valorInicial }: { label: string; name: string; valorInicial: number }) {
+  const [valor, setValor] = useState(valorInicial);
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm">{label}</span>
+      <div className="flex items-center gap-1">
+        <input type="hidden" name={name} value={valor} />
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setValor(n)}
+            aria-label={`${label}: ${n} de 5`}
+            className={`text-xl leading-none transition-transform hover:scale-110 ${n <= valor ? "" : "text-[var(--muted)] opacity-50"}`}
+          >
+            {n <= valor ? "⭐" : "☆"}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
