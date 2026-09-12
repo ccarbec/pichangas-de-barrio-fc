@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
+import { redimensionarImagen } from "@/lib/imagenes";
 
 export async function crearEstadio(formData: FormData) {
   await requireAdmin();
@@ -45,10 +46,11 @@ export async function subirFotoEstadio(formData: FormData): Promise<{ error?: st
   if (!archivo || archivo.size === 0) return { error: "Selecciona una foto." };
   if (archivo.size > 5 * 1024 * 1024) return { error: "La foto pesa más de 5MB." };
 
-  const bytes = Buffer.from(await archivo.arrayBuffer());
+  const original = Buffer.from(await archivo.arrayBuffer());
+  const { bytes, mime } = await redimensionarImagen(original, 800);
   await prisma.estadio.update({
     where: { id: estadioId },
-    data: { fotoImg: bytes, fotoMime: archivo.type },
+    data: { fotoImg: bytes, fotoMime: mime },
   });
   revalidatePath("/dashboard/configuracion");
   return {};

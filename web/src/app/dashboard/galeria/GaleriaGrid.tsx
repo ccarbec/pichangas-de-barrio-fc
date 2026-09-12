@@ -44,14 +44,18 @@ export function GaleriaGrid({ items, esAdmin }: { items: Item[]; esAdmin: boolea
       {items.map((item) => (
         <div key={item.id} className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
           {item.tipo === "video" ? (
-            <video src={`/api/galeria/${item.id}`} controls className="aspect-video w-full bg-black" />
+            <video
+              src={`/api/galeria/${item.id}`}
+              controls
+              className="aspect-video w-full bg-black object-contain"
+            />
           ) : (
             <a href={`/api/galeria/${item.id}`} target="_blank" rel="noopener noreferrer">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`/api/galeria/${item.id}`}
                 alt={item.descripcion ?? "Foto de la galería"}
-                className="aspect-video w-full object-cover"
+                className="aspect-video w-full bg-black object-contain"
               />
             </a>
           )}

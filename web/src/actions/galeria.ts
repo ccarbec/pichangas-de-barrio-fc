@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
+import { redimensionarImagen } from "@/lib/imagenes";
 
 const MAX_BYTES_FOTO = 5 * 1024 * 1024;
 const MAX_BYTES_VIDEO = 20 * 1024 * 1024;
@@ -28,14 +29,15 @@ export async function subirGaleria(formData: FormData): Promise<{ error?: string
   const partidoId = partidoIdRaw ? Number(partidoIdRaw) : null;
   const descripcion = String(formData.get("descripcion") ?? "").trim() || null;
 
-  const bytes = Buffer.from(await archivo.arrayBuffer());
+  const original = Buffer.from(await archivo.arrayBuffer());
+  const { bytes, mime } = esFoto ? await redimensionarImagen(original, 1600) : { bytes: original, mime: archivo.type };
   await prisma.galeriaItem.create({
     data: {
       partidoId,
       subidoPorId: admin.id,
       tipo: esVideo ? "video" : "foto",
       archivo: bytes,
-      mime: archivo.type,
+      mime,
       descripcion,
       fechaSubida: new Date().toISOString(),
     },

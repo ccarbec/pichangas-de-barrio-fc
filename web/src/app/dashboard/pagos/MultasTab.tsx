@@ -37,8 +37,14 @@ export function MultasTab({
           {pendientesVerificacion.map((m) => (
             <div key={m.id} className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row">
               {m.comprobante && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.comprobante} alt="Comprobante" className="h-32 w-32 rounded-lg object-cover" />
+                <a href={m.comprobante} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={m.comprobante}
+                    alt="Comprobante"
+                    className="max-h-64 w-full max-w-[12rem] rounded-lg object-contain sm:w-auto"
+                  />
+                </a>
               )}
               <div className="flex-1">
                 <p className="font-semibold">

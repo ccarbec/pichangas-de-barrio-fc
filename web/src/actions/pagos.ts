@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
 import { nombreCompleto } from "@/lib/estilos";
+import { redimensionarImagen } from "@/lib/imagenes";
 
 const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
 
@@ -29,7 +30,8 @@ export async function registrarPago(formData: FormData): Promise<{ error?: strin
     return { error: `La imagen pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es 5 MB.` };
   }
 
-  const bytes = Buffer.from(await archivo.arrayBuffer());
+  const original = Buffer.from(await archivo.arrayBuffer());
+  const { bytes, mime } = await redimensionarImagen(original, 1200);
   const existente = await prisma.pago.findUnique({ where: { inscripcionId } });
 
   if (existente) {
@@ -38,7 +40,7 @@ export async function registrarPago(formData: FormData): Promise<{ error?: strin
       data: {
         monto,
         comprobanteImg: bytes,
-        comprobanteMime: archivo.type,
+        comprobanteMime: mime,
         estado: "pendiente",
         fechaPago: new Date().toISOString(),
         verificadoPor: null,
@@ -52,7 +54,7 @@ export async function registrarPago(formData: FormData): Promise<{ error?: strin
         inscripcionId,
         monto,
         comprobanteImg: bytes,
-        comprobanteMime: archivo.type,
+        comprobanteMime: mime,
         fechaPago: new Date().toISOString(),
       },
     });
