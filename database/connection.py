@@ -180,6 +180,10 @@ MIGRACIONES = [
     "ALTER TABLE jugadores ADD COLUMN resena TEXT DEFAULT ''",
     "ALTER TABLE estadios ADD COLUMN foto_img BLOB",
     "ALTER TABLE estadios ADD COLUMN foto_mime TEXT",
+    "ALTER TABLE jugadores ADD COLUMN stat_velocidad INTEGER DEFAULT 3",
+    "ALTER TABLE jugadores ADD COLUMN stat_tecnica INTEGER DEFAULT 3",
+    "ALTER TABLE jugadores ADD COLUMN stat_defensa INTEGER DEFAULT 3",
+    "ALTER TABLE jugadores ADD COLUMN stat_fisico INTEGER DEFAULT 3",
 ]
 
 
