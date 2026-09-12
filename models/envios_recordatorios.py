@@ -21,15 +21,17 @@ def registrar_envio(jugador_nombre, telefono, partido_fecha, partido_hora, tipo,
 
 
 def ya_enviado(telefono, partido_fecha, partido_hora, tipo):
-    """True si ya se registró un envío de este tipo para este jugador y
-    este partido — evita que la revisión automática (cada hora) repita el
-    mismo mensaje."""
+    """True si ya se registró un envío EXITOSO de este tipo para este
+    jugador y este partido — evita que la revisión automática (cada hora)
+    repita el mismo mensaje. Un intento que falló (ej. WhatsApp Web
+    trabado o sin sesión) no cuenta como enviado, así que se reintenta
+    solo en la próxima revisión en vez de perderse para siempre."""
     conexion = get_connection()
     try:
         fila = conexion.execute(
             """
             SELECT 1 FROM envios_recordatorios
-            WHERE telefono = ? AND partido_fecha = ? AND partido_hora = ? AND tipo = ?
+            WHERE telefono = ? AND partido_fecha = ? AND partido_hora = ? AND tipo = ? AND resultado = 'enviado'
             LIMIT 1
             """,
             (telefono, partido_fecha, partido_hora, tipo),
