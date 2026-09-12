@@ -9,6 +9,7 @@ import { AsistenciaSelect } from "./AsistenciaSelect";
 import { Badge } from "../../components/Badge";
 import { Toast } from "../../components/Toast";
 import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO, emojiPosicion, esArquero, nombreCompleto } from "@/lib/estilos";
+import { armarEquipos, puntajeJugador, type JugadorParaEquipo } from "@/lib/equipos";
 
 const ETIQUETA_ASISTENCIA_EXCEL: Record<string, string> = {
   llego: "Llegó",
@@ -16,7 +17,17 @@ const ETIQUETA_ASISTENCIA_EXCEL: Record<string, string> = {
   no_llego: "No llegó",
 };
 
-type Jugador = { id: number; apellidos: string; apodo: string | null; posicion: string | null; usuario: { nombre: string; telefono: string } };
+type Jugador = {
+  id: number;
+  apellidos: string;
+  apodo: string | null;
+  posicion: string | null;
+  statVelocidad?: number;
+  statTecnica?: number;
+  statDefensa?: number;
+  statFisico?: number;
+  usuario: { nombre: string; telefono: string };
+};
 type Inscripcion = {
   id: number;
   jugadorId: number;
@@ -54,6 +65,7 @@ export function PartidoAdmin({
   const [verInscritos, setVerInscritos] = useState(false);
   const [reemplazoDe, setReemplazoDe] = useState<number | null>(null);
   const [autorizarCierre, setAutorizarCierre] = useState(false);
+  const [equipos, setEquipos] = useState<{ equipoA: JugadorParaEquipo[]; equipoB: JugadorParaEquipo[] } | null>(null);
 
   const confirmados = inscritos.filter((i) => i.estado === "confirmado");
   const arquerosConfirmados = confirmados.filter((i) => esArquero(i.jugador.posicion)).length;
@@ -64,6 +76,20 @@ export function PartidoAdmin({
 
   const faltanPago = confirmados.filter((i) => i.pago?.estado !== "verificado" && i.asistio !== "no_llego").length;
   const recaudado = inscritos.reduce((sum, i) => (i.pago?.estado === "verificado" ? sum + i.pago.monto : sum), 0);
+
+  function armarEquiposClick() {
+    const jugadoresParaEquipo: JugadorParaEquipo[] = confirmados.map((i) => ({
+      id: i.jugador.id,
+      nombre: nombreCompleto(i.jugador),
+      apodo: i.jugador.apodo,
+      posicion: i.jugador.posicion,
+      statVelocidad: i.jugador.statVelocidad ?? 3,
+      statTecnica: i.jugador.statTecnica ?? 3,
+      statDefensa: i.jugador.statDefensa ?? 3,
+      statFisico: i.jugador.statFisico ?? 3,
+    }));
+    setEquipos(armarEquipos(jugadoresParaEquipo));
+  }
 
   function run(fn: () => Promise<unknown>, mensajeExito?: string) {
     startTransition(async () => {
@@ -166,7 +192,17 @@ export function PartidoAdmin({
             📥 Exportar a Excel
           </button>
         )}
+        {confirmados.length >= 2 && (
+          <button
+            onClick={armarEquiposClick}
+            className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+          >
+            ⚖️ {equipos ? "Volver a armar equipos" : "Armar equipos"}
+          </button>
+        )}
       </div>
+
+      {equipos && <EquiposPanel equipos={equipos} onCerrar={() => setEquipos(null)} />}
 
       {verInscritos && (
         <div className="mt-3 flex flex-col gap-3 border-t border-[var(--border)] pt-4">
@@ -326,6 +362,53 @@ export function PartidoAdmin({
       {partido.estado === "cancelado" && (
         <RepetirForm partidoId={partido.id} pending={pending} run={run} duplicar={duplicarPartido} />
       )}
+    </div>
+  );
+}
+
+function EquiposPanel({
+  equipos,
+  onCerrar,
+}: {
+  equipos: { equipoA: JugadorParaEquipo[]; equipoB: JugadorParaEquipo[] };
+  onCerrar: () => void;
+}) {
+  const puntajeA = equipos.equipoA.reduce((sum, j) => sum + puntajeJugador(j), 0);
+  const puntajeB = equipos.equipoB.reduce((sum, j) => sum + puntajeJugador(j), 0);
+
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--border)] p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase text-[var(--muted)]">⚖️ Equipos sugeridos</p>
+        <button onClick={onCerrar} className="text-xs text-[var(--muted)] hover:text-[var(--foreground)]">
+          ✕ Cerrar
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <EquipoColumna titulo="🔵 Equipo A" jugadores={equipos.equipoA} puntaje={puntajeA} />
+        <EquipoColumna titulo="🔴 Equipo B" jugadores={equipos.equipoB} puntaje={puntajeB} />
+      </div>
+    </div>
+  );
+}
+
+function EquipoColumna({ titulo, jugadores, puntaje }: { titulo: string; jugadores: JugadorParaEquipo[]; puntaje: number }) {
+  return (
+    <div className="rounded-lg bg-[var(--background)] p-3">
+      <div className="mb-2 flex items-center justify-between text-sm font-semibold">
+        <span>{titulo}</span>
+        <span className="text-xs text-[var(--muted)]">Nivel total: {puntaje}</span>
+      </div>
+      <ul className="flex flex-col gap-1 text-sm">
+        {jugadores.map((j) => (
+          <li key={j.id} className="flex items-center justify-between gap-2">
+            <span>
+              {emojiPosicion(j.posicion)} {j.nombre}
+            </span>
+            <span className="text-xs text-[var(--muted)]">{puntajeJugador(j)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

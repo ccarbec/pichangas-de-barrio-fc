@@ -42,6 +42,12 @@ export async function crearJugadorManual(formData: FormData): Promise<{ error?: 
   return {};
 }
 
+function statDesdeFormulario(formData: FormData, campo: string): number {
+  const valor = Math.round(Number(formData.get(campo) ?? 3));
+  if (!Number.isFinite(valor)) return 3;
+  return Math.min(5, Math.max(1, valor));
+}
+
 export async function actualizarJugador(formData: FormData) {
   await requireAdmin();
 
@@ -56,6 +62,10 @@ export async function actualizarJugador(formData: FormData) {
       posicion: String(formData.get("posicion") ?? "") || null,
       equipoHincha: String(formData.get("equipoHincha") ?? "").trim(),
       camiseta: String(formData.get("camiseta") ?? "").trim(),
+      statVelocidad: statDesdeFormulario(formData, "statVelocidad"),
+      statTecnica: statDesdeFormulario(formData, "statTecnica"),
+      statDefensa: statDesdeFormulario(formData, "statDefensa"),
+      statFisico: statDesdeFormulario(formData, "statFisico"),
     },
   });
 

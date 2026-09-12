@@ -53,6 +53,12 @@ model Jugador {
   estado         String  @default("activo")
   fechaRegistro  String  @default("") @map("fecha_registro")
 
+  // Estadísticas (1-5) para armar equipos parejos — ver src/lib/equipos.ts.
+  statVelocidad Int @default(3) @map("stat_velocidad")
+  statTecnica   Int @default(3) @map("stat_tecnica")
+  statDefensa   Int @default(3) @map("stat_defensa")
+  statFisico    Int @default(3) @map("stat_fisico")
+
   usuario       Usuario        @relation(fields: [usuarioId], references: [id])
   inscripciones Inscripcion[]
   multas        Multa[]

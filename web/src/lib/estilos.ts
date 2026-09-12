@@ -37,6 +37,15 @@ export const ETIQUETA_PAGO: Record<string, { texto: string; variant: "active" | 
 
 export const POSICIONES_SUGERIDAS = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"];
 
+export function categoriaPosicion(posicion?: string | null): "arquero" | "defensa" | "mediocampo" | "delantero" | "otros" {
+  if (esArquero(posicion)) return "arquero";
+  const p = (posicion ?? "").toLowerCase();
+  if (p.includes("defensa") || p.includes("lateral") || p.includes("central")) return "defensa";
+  if (p.includes("volante") || p.includes("medio") || p.includes("mediocamp")) return "mediocampo";
+  if (p.includes("delantero") || p.includes("extremo") || p.includes("punta")) return "delantero";
+  return "otros";
+}
+
 export const ETIQUETAS_ASISTENCIA = [
   { value: "", label: "Sin marcar" },
   { value: "llego", label: "✅ Llegó" },

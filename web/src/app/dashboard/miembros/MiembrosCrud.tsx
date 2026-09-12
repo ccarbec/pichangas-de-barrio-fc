@@ -26,6 +26,10 @@ type Jugador = {
   estado: string;
   foto: string | null;
   tieneHistorial: boolean;
+  statVelocidad: number;
+  statTecnica: number;
+  statDefensa: number;
+  statFisico: number;
 };
 
 export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
@@ -218,6 +222,26 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                   </select>
                 </Campo>
                 <Campo label="Nueva contraseña (opcional)"><input name="nuevaPassword" type="password" className={inputClass} /></Campo>
+
+                <div className="col-span-full">
+                  <p className="mb-2 text-xs font-semibold uppercase text-[var(--muted)]">
+                    ⚖️ Estadísticas (1-5, para armar equipos parejos)
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <Campo label="Velocidad">
+                      <input name="statVelocidad" type="number" min={1} max={5} defaultValue={seleccionado.statVelocidad} className={inputClass} />
+                    </Campo>
+                    <Campo label="Técnica">
+                      <input name="statTecnica" type="number" min={1} max={5} defaultValue={seleccionado.statTecnica} className={inputClass} />
+                    </Campo>
+                    <Campo label="Defensa">
+                      <input name="statDefensa" type="number" min={1} max={5} defaultValue={seleccionado.statDefensa} className={inputClass} />
+                    </Campo>
+                    <Campo label="Físico">
+                      <input name="statFisico" type="number" min={1} max={5} defaultValue={seleccionado.statFisico} className={inputClass} />
+                    </Campo>
+                  </div>
+                </div>
 
                 <div className="col-span-full flex items-center gap-2">
                   <button type="submit" disabled={pending} className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">

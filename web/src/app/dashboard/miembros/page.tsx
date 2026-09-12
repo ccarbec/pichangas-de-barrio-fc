@@ -34,6 +34,10 @@ export default async function MiembrosPage() {
     estado: j.estado,
     foto: aDataUrl(j.fotoImg, j.fotoMime),
     tieneHistorial: idsConHistorial.has(j.id),
+    statVelocidad: j.statVelocidad,
+    statTecnica: j.statTecnica,
+    statDefensa: j.statDefensa,
+    statFisico: j.statFisico,
   }));
 
   return <MiembrosCrud jugadores={data} />;

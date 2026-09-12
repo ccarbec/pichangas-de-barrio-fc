@@ -54,6 +54,10 @@ async function main() {
         usuarioId: usuario.id,
         apellidos,
         posicion: ["Arquero", "Defensa", "Mediocampo", "Delantero"][i % 4],
+        statVelocidad: 1 + ((i * 2) % 5),
+        statTecnica: 1 + ((i * 3) % 5),
+        statDefensa: 1 + ((i * 5) % 5),
+        statFisico: 1 + ((i * 7) % 5),
       },
     });
     jugadores.push(jugador);
