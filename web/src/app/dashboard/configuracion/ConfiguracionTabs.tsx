@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { crearEstadio, actualizarEstadio, cambiarEstadoEstadio, subirFotoEstadio } from "@/actions/estadios";
 import { guardarClubConfig } from "@/actions/club-config";
+import { crearPlantilla, actualizarPlantilla, eliminarPlantilla } from "@/actions/plantillas";
+import { TIPOS_PLANTILLA, type TipoPlantilla } from "@/lib/plantillas";
 import { Badge } from "../../components/Badge";
 import { Toast } from "../../components/Toast";
 
@@ -20,11 +22,20 @@ type Config = {
   montoMultaTardanza: number;
   montoMultaNoAsistio: number;
 };
+type Plantillas = Record<TipoPlantilla, { id: number; texto: string }[]>;
 
 const inputClass = "w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm";
 
-export function ConfiguracionTabs({ estadios, config }: { estadios: Estadio[]; config: Config }) {
-  const [tab, setTab] = useState<"estadios" | "yape">("estadios");
+export function ConfiguracionTabs({
+  estadios,
+  config,
+  plantillas,
+}: {
+  estadios: Estadio[];
+  config: Config;
+  plantillas: Plantillas;
+}) {
+  const [tab, setTab] = useState<"estadios" | "yape" | "mensajes">("estadios");
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,10 +54,22 @@ export function ConfiguracionTabs({ estadios, config }: { estadios: Estadio[]; c
           >
             💰 Yape y multas
           </button>
+          <button
+            onClick={() => setTab("mensajes")}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${tab === "mensajes" ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"}`}
+          >
+            💬 Mensajes WhatsApp
+          </button>
         </div>
       </div>
 
-      {tab === "estadios" ? <EstadiosTab estadios={estadios} /> : <YapeTab config={config} />}
+      {tab === "estadios" ? (
+        <EstadiosTab estadios={estadios} />
+      ) : tab === "yape" ? (
+        <YapeTab config={config} />
+      ) : (
+        <MensajesTab plantillas={plantillas} />
+      )}
     </div>
   );
 }
@@ -237,5 +260,105 @@ function YapeTab({ config }: { config: Config }) {
         💾 Guardar configuración
       </button>
     </form>
+  );
+}
+
+const ETIQUETAS_PLANTILLA: Record<TipoPlantilla, { titulo: string; descripcion: string }> = {
+  recordatorio: {
+    titulo: "Recordatorio del partido",
+    descripcion: "Se manda una vez, la mañana del mismo día, a todos los confirmados.",
+  },
+  pago_pendiente: {
+    titulo: "Recordatorio de pago pendiente",
+    descripcion: "Se manda cuando faltan entre 6 y 24 horas para el partido, a quien no tenga el pago verificado.",
+  },
+  cupo_liberado: {
+    titulo: "Aviso: se liberó tu cupo",
+    descripcion: "Se manda cuando faltan 6 horas o menos y se cancela la inscripción por falta de pago.",
+  },
+  promovido: {
+    titulo: "Aviso: entraste a jugar",
+    descripcion: "Se manda a quien sube de la lista de espera a confirmado por un cupo recién liberado.",
+  },
+};
+
+function MensajesTab({ plantillas }: { plantillas: Plantillas }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)]">
+        Cada tipo de mensaje puede tener varias versiones — cada vez que se manda, el sistema elige una al azar para
+        que no le llegue siempre el mismo texto a todos. Puedes usar estas variables en el texto:{" "}
+        <code className="text-[var(--foreground)]">{"{nombre} {fecha} {hora} {cancha} {costo} {saludo}"}</code>.
+      </div>
+      {TIPOS_PLANTILLA.map((tipo) => (
+        <PlantillaSeccion key={tipo} tipo={tipo} variantes={plantillas[tipo]} />
+      ))}
+    </div>
+  );
+}
+
+function PlantillaSeccion({ tipo, variantes }: { tipo: TipoPlantilla; variantes: { id: number; texto: string }[] }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const etiqueta = ETIQUETAS_PLANTILLA[tipo];
+
+  function run(fn: () => Promise<{ error?: string } | void>, mensajeExito?: string) {
+    startTransition(async () => {
+      setError(null);
+      const resultado = await fn();
+      if (resultado && resultado.error) {
+        setError(resultado.error);
+      } else if (mensajeExito) {
+        setToast(mensajeExito);
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+      {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
+      <h3 className="font-semibold">{etiqueta.titulo}</h3>
+      <p className="mb-3 text-xs text-[var(--muted)]">{etiqueta.descripcion}</p>
+
+      <div className="flex flex-col gap-2">
+        {variantes.map((v) => (
+          <form
+            key={v.id}
+            action={(fd) => run(() => actualizarPlantilla(v.id, String(fd.get("texto"))), "Mensaje actualizado.")}
+            className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3 sm:flex-row sm:items-start"
+          >
+            <textarea name="texto" defaultValue={v.texto} rows={2} className={`${inputClass} sm:flex-1`} />
+            <div className="flex gap-2">
+              <button type="submit" disabled={pending} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition-colors hover:border-[var(--accent)] disabled:opacity-60">
+                💾 Guardar
+              </button>
+              <button
+                type="button"
+                disabled={pending || variantes.length <= 1}
+                onClick={() => run(() => eliminarPlantilla(v.id), "Mensaje eliminado.")}
+                title={variantes.length <= 1 ? "Debe quedar al menos un mensaje de este tipo" : undefined}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--danger)] transition-colors hover:border-[var(--danger)] disabled:opacity-40"
+              >
+                🗑️
+              </button>
+            </div>
+          </form>
+        ))}
+      </div>
+
+      <form
+        key={variantes.length}
+        action={(fd) => run(() => crearPlantilla(tipo, String(fd.get("texto"))), "Mensaje agregado.")}
+        className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start"
+      >
+        <textarea name="texto" placeholder="Nueva variante de mensaje…" rows={2} className={`${inputClass} sm:flex-1`} />
+        <button type="submit" disabled={pending} className="self-start rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-60">
+          ➕ Agregar
+        </button>
+      </form>
+
+      {error && <p className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
+    </div>
   );
 }

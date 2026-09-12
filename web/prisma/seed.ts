@@ -15,6 +15,7 @@ async function main() {
   await prisma.usuario.deleteMany();
   await prisma.estadio.deleteMany();
   await prisma.clubConfig.deleteMany();
+  await prisma.plantillaMensaje.deleteMany();
 
   const { hash: hashAdmin, salt: saltAdmin } = generarHash("demo123");
   const admin = await prisma.usuario.create({
@@ -115,6 +116,31 @@ async function main() {
       await prisma.multa.create({
         data: { jugadorId: jugadores[i].id, partidoId: partidoJugado.id, tipo: "no_asistio", monto: 10 },
       });
+    }
+  }
+
+  const plantillasPorTipo: Record<string, string[]> = {
+    recordatorio: [
+      "🔥 ¡Hoy se juega, {nombre}! Nos vemos a las {hora} en {cancha}. Trae las ganas — la pelota no espera a los que llegan tarde ⏱️⚽",
+      "{saludo} {nombre}! Recuerda que hoy tenemos pichanga a las {hora} en {cancha}. Aporte: S/ {costo}. ¡Nos vemos ahí, crack! ⚽😄",
+      "⚽ Once amigos, una pelota, una cancha. Hoy a las {hora} en {cancha} nos vemos para la pichanga de siempre. ¡No faltes, {nombre}! 🔥",
+    ],
+    pago_pendiente: [
+      "{saludo} {nombre} 👋 Antes de que te pite el árbitro… todavía falta tu Yape (S/ {costo}) para la pichanga del {fecha} a las {hora}. Si no llega, tu cupo se libera automáticamente 6 horas antes del partido. ¡No dejes que se enfríe! 💸⚽",
+      "{saludo} {nombre}, un recordatorio nomás: falta tu comprobante de pago (S/ {costo}) para la pichanga del {fecha} a las {hora}. Yapea y sube tu captura para asegurar tu cupo 🙏⚽",
+    ],
+    cupo_liberado: [
+      "🟥 {nombre}, tarjeta roja para tu cupo esta vez — se liberó porque no llegó el pago a tiempo para la pichanga del {fecha} a las {hora} en {cancha}. Sin rencores, revisa la app por si todavía hay sitio 👀⚽",
+      "⏱️ Se acabó el tiempo, {nombre} — tu cupo para la pichanga del {fecha} a las {hora} quedó libre por falta de pago. Revisa la app, capaz todavía alcanzas 👟",
+    ],
+    promovido: [
+      "🟢 ¡Entras a jugar, {nombre}! Se liberó un cupo y quedaste CONFIRMADO para la pichanga del {fecha} a las {hora} en {cancha}. Aporte: S/ {costo} — yapea pronto para no perder tu titularidad 🔥⚽",
+      "🎉 Buenas noticias, {nombre}: se liberó un cupo y ahora estás CONFIRMADO para el {fecha} a las {hora} en {cancha}. Aporte: S/ {costo} — ¡nos vemos en la cancha! ⚽",
+    ],
+  };
+  for (const [tipo, textos] of Object.entries(plantillasPorTipo)) {
+    for (const texto of textos) {
+      await prisma.plantillaMensaje.create({ data: { tipo, texto, fechaCreacion: new Date().toISOString() } });
     }
   }
 

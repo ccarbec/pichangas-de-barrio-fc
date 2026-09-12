@@ -174,6 +174,15 @@ model GaleriaItem {
   @@map("galeria_items")
 }
 
+model PlantillaMensaje {
+  id            Int    @id @default(autoincrement())
+  tipo          String
+  texto         String
+  fechaCreacion String @default("") @map("fecha_creacion")
+
+  @@map("plantillas_mensajes")
+}
+
 model EnvioRecordatorio {
   id            Int    @id @default(autoincrement())
   jugadorNombre String @map("jugador_nombre")
