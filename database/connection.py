@@ -153,6 +153,16 @@ CREATE TABLE IF NOT EXISTS envios_recordatorios (
     detalle_error TEXT,
     fecha_hora TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
+
+-- Variantes de texto configurables desde la app web (Configuración > Mensajes
+-- WhatsApp) para cada tipo de recordatorio. scripts/recordatorios_auto.py
+-- elige una al azar por tipo en cada envío en vez de usar texto fijo.
+CREATE TABLE IF NOT EXISTS plantillas_mensajes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT NOT NULL,
+    texto TEXT NOT NULL,
+    fecha_creacion TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
 """
 
 # ALTER TABLE para bases que ya existían antes de sumar estas columnas a

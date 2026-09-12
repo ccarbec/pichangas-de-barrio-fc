@@ -34,45 +34,12 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.connection import init_db
-from models import envios_recordatorios, inscripciones, partidos
+from models import envios_recordatorios, inscripciones, partidos, plantillas_mensajes
 from whatsapp import client as whatsapp_client
 
 VENTANA_RECORDATORIO_PARTIDO = (8, 10)  # hora local, [inicio, fin)
 HORAS_RECORDATORIO_PAGO = 24
 HORAS_LIMITE_PAGO = 6
-
-# Varias variantes por tipo de mensaje — se elige una al azar cada vez, para
-# que no le llegue el mismo texto siempre a todo el mundo.
-TEXTOS_RECORDATORIO_PARTIDO = [
-    "🔥 ¡Hoy se juega, {nombre}! Nos vemos a las {hora} en {cancha}. Trae las ganas — "
-    "la pelota no espera a los que llegan tarde ⏱️⚽",
-    "{saludo} {nombre}! Recuerda que hoy tenemos pichanga a las {hora} en {cancha}. "
-    "Aporte: S/ {costo}. ¡Nos vemos ahí, crack! ⚽😄",
-    "⚽ Once amigos, una pelota, una cancha. Hoy a las {hora} en {cancha} nos vemos "
-    "para la pichanga de siempre. ¡No faltes, {nombre}! 🔥",
-]
-TEXTOS_RECORDATORIO_PAGO = [
-    "{saludo} {nombre} 👋 Antes de que te pite el árbitro… todavía falta tu Yape "
-    "(S/ {costo}) para la pichanga del {fecha} a las {hora}. Si no llega, tu cupo se "
-    "libera automáticamente 6 horas antes del partido. ¡No dejes que se enfríe! 💸⚽",
-    "{saludo} {nombre}, un recordatorio nomás: falta tu comprobante de pago "
-    "(S/ {costo}) para la pichanga del {fecha} a las {hora}. Yapea y sube tu captura "
-    "para asegurar tu cupo 🙏⚽",
-]
-TEXTOS_CUPO_LIBERADO = [
-    "🟥 {nombre}, tarjeta roja para tu cupo esta vez — se liberó porque no llegó el "
-    "pago a tiempo para la pichanga del {fecha} a las {hora} en {cancha}. Sin rencores, "
-    "revisa la app por si todavía hay sitio 👀⚽",
-    "⏱️ Se acabó el tiempo, {nombre} — tu cupo para la pichanga del {fecha} a las "
-    "{hora} quedó libre por falta de pago. Revisa la app, capaz todavía alcanzas 👟",
-]
-TEXTOS_PROMOVIDO = [
-    "🟢 ¡Entras a jugar, {nombre}! Se liberó un cupo y quedaste CONFIRMADO para la "
-    "pichanga del {fecha} a las {hora} en {cancha}. Aporte: S/ {costo} — yapea pronto "
-    "para no perder tu titularidad 🔥⚽",
-    "🎉 Buenas noticias, {nombre}: se liberó un cupo y ahora estás CONFIRMADO para el "
-    "{fecha} a las {hora} en {cancha}. Aporte: S/ {costo} — ¡nos vemos en la cancha! ⚽",
-]
 
 
 def _horas_hasta(partido):
@@ -80,8 +47,11 @@ def _horas_hasta(partido):
     return (fecha_hora - datetime.now()).total_seconds() / 3600
 
 
-def _agregar_pendiente(pendientes, jugador, partido, tipo, variantes_texto):
-    texto_plantilla = random.choice(variantes_texto)
+def _agregar_pendiente(pendientes, jugador, partido, tipo):
+    variantes = plantillas_mensajes.listar_variantes(tipo)
+    if not variantes:
+        return  # nada configurado para este tipo en Configuración > Mensajes WhatsApp
+    texto_plantilla = random.choice(variantes)
     pendientes.append(
         {
             "telefono": jugador["telefono"],
@@ -118,22 +88,22 @@ def construir_pendientes():
             for jugador in confirmados:
                 if envios_recordatorios.ya_enviado(jugador["telefono"], partido["fecha"], partido["hora"], "recordatorio"):
                     continue
-                _agregar_pendiente(pendientes, jugador, partido, "recordatorio", TEXTOS_RECORDATORIO_PARTIDO)
+                _agregar_pendiente(pendientes, jugador, partido, "recordatorio")
 
         if HORAS_LIMITE_PAGO < horas_restantes <= HORAS_RECORDATORIO_PAGO:
             for jugador in pendientes_pago:
                 if envios_recordatorios.ya_enviado(jugador["telefono"], partido["fecha"], partido["hora"], "pago_pendiente"):
                     continue
-                _agregar_pendiente(pendientes, jugador, partido, "pago_pendiente", TEXTOS_RECORDATORIO_PAGO)
+                _agregar_pendiente(pendientes, jugador, partido, "pago_pendiente")
 
         if 0 <= horas_restantes <= HORAS_LIMITE_PAGO:
             for jugador in pendientes_pago:
                 if envios_recordatorios.ya_enviado(jugador["telefono"], partido["fecha"], partido["hora"], "cupo_liberado"):
                     continue
                 promovido = inscripciones.cancelar_inscripcion(jugador["id"])
-                _agregar_pendiente(pendientes, jugador, partido, "cupo_liberado", TEXTOS_CUPO_LIBERADO)
+                _agregar_pendiente(pendientes, jugador, partido, "cupo_liberado")
                 if promovido:
-                    _agregar_pendiente(pendientes, promovido, partido, "promovido", TEXTOS_PROMOVIDO)
+                    _agregar_pendiente(pendientes, promovido, partido, "promovido")
 
     return pendientes
 
@@ -155,6 +125,7 @@ def enviar_pendientes(pendientes):
 
 def main():
     init_db()
+    plantillas_mensajes.asegurar_valores_por_defecto()
     if not whatsapp_client.hay_sesion_vinculada():
         print("WhatsApp no está vinculado en esta PC — corre scripts/vincular_whatsapp.py primero.")
         return
