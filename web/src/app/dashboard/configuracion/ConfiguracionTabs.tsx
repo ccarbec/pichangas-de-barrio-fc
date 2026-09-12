@@ -263,22 +263,40 @@ function YapeTab({ config }: { config: Config }) {
   );
 }
 
-const ETIQUETAS_PLANTILLA: Record<TipoPlantilla, { titulo: string; descripcion: string }> = {
+const VARIABLES_PARTIDO = "{nombre} {fecha} {hora} {cancha} {costo} {saludo}";
+const VARIABLES_MULTA = "{nombre} {monto} {fecha} {saludo}";
+
+const ETIQUETAS_PLANTILLA: Record<TipoPlantilla, { titulo: string; descripcion: string; variables: string }> = {
   recordatorio: {
     titulo: "Recordatorio del partido",
     descripcion: "Se manda una vez, la mañana del mismo día, a todos los confirmados.",
+    variables: VARIABLES_PARTIDO,
   },
   pago_pendiente: {
     titulo: "Recordatorio de pago pendiente",
     descripcion: "Se manda cuando faltan entre 6 y 24 horas para el partido, a quien no tenga el pago verificado.",
+    variables: VARIABLES_PARTIDO,
   },
   cupo_liberado: {
     titulo: "Aviso: se liberó tu cupo",
     descripcion: "Se manda cuando faltan 6 horas o menos y se cancela la inscripción por falta de pago.",
+    variables: VARIABLES_PARTIDO,
   },
   promovido: {
     titulo: "Aviso: entraste a jugar",
     descripcion: "Se manda a quien sube de la lista de espera a confirmado por un cupo recién liberado.",
+    variables: VARIABLES_PARTIDO,
+  },
+  cierre_partido: {
+    titulo: "Aliento después del partido",
+    descripcion:
+      "No se manda solo — Carlos lo dispara a mano (acceso directo \"Enviar Mensaje de Cierre\") después de cerrar un partido, y solo llega a quienes de verdad jugaron (llegaron o llegaron tarde).",
+    variables: VARIABLES_PARTIDO,
+  },
+  multa_pendiente: {
+    titulo: "Recordatorio de multa sin pagar",
+    descripcion: "Se manda una sola vez por multa, a quien tenga una multa en estado \"debe\".",
+    variables: VARIABLES_MULTA,
   },
 };
 
@@ -287,8 +305,7 @@ function MensajesTab({ plantillas }: { plantillas: Plantillas }) {
     <div className="flex flex-col gap-4">
       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)]">
         Cada tipo de mensaje puede tener varias versiones — cada vez que se manda, el sistema elige una al azar para
-        que no le llegue siempre el mismo texto a todos. Puedes usar estas variables en el texto:{" "}
-        <code className="text-[var(--foreground)]">{"{nombre} {fecha} {hora} {cancha} {costo} {saludo}"}</code>.
+        que no le llegue siempre el mismo texto a todos.
       </div>
       {TIPOS_PLANTILLA.map((tipo) => (
         <PlantillaSeccion key={tipo} tipo={tipo} variantes={plantillas[tipo]} />
@@ -319,7 +336,10 @@ function PlantillaSeccion({ tipo, variantes }: { tipo: TipoPlantilla; variantes:
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
       {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
       <h3 className="font-semibold">{etiqueta.titulo}</h3>
-      <p className="mb-3 text-xs text-[var(--muted)]">{etiqueta.descripcion}</p>
+      <p className="text-xs text-[var(--muted)]">{etiqueta.descripcion}</p>
+      <p className="mb-3 text-xs text-[var(--muted)]">
+        Variables: <code className="text-[var(--foreground)]">{etiqueta.variables}</code>
+      </p>
 
       <div className="flex flex-col gap-2">
         {variantes.map((v) => (

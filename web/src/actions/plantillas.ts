@@ -8,12 +8,13 @@ import { TIPOS_PLANTILLA, type TipoPlantilla } from "@/lib/plantillas";
 export async function listarPlantillas(): Promise<Record<TipoPlantilla, { id: number; texto: string }[]>> {
   await requireAdmin();
   const plantillas = await prisma.plantillaMensaje.findMany({ orderBy: { id: "asc" } });
-  const porTipo = {
-    recordatorio: [],
-    pago_pendiente: [],
-    cupo_liberado: [],
-    promovido: [],
-  } as Record<TipoPlantilla, { id: number; texto: string }[]>;
+  const porTipo = TIPOS_PLANTILLA.reduce(
+    (acc, tipo) => {
+      acc[tipo] = [];
+      return acc;
+    },
+    {} as Record<TipoPlantilla, { id: number; texto: string }[]>
+  );
   for (const p of plantillas) {
     if (p.tipo in porTipo) porTipo[p.tipo as TipoPlantilla].push({ id: p.id, texto: p.texto });
   }

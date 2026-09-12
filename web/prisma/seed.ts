@@ -137,6 +137,15 @@ async function main() {
       "🟢 ¡Entras a jugar, {nombre}! Se liberó un cupo y quedaste CONFIRMADO para la pichanga del {fecha} a las {hora} en {cancha}. Aporte: S/ {costo} — yapea pronto para no perder tu titularidad 🔥⚽",
       "🎉 Buenas noticias, {nombre}: se liberó un cupo y ahora estás CONFIRMADO para el {fecha} a las {hora} en {cancha}. Aporte: S/ {costo} — ¡nos vemos en la cancha! ⚽",
     ],
+    cierre_partido: [
+      "🔥 ¡Qué pichanga la de hoy, {nombre}! Gracias por venir y darlo todo en la cancha. ¡Nos vemos en la próxima! ⚽💪",
+      "👏 Excelente nivel el de hoy, {nombre}. Se sintió el equipo. ¡A seguir así para la próxima pichanga! ⚽🔥",
+      "⚽ Gracias por jugar hoy, {nombre} — esas jugadas se disfrutan. ¡Nos vemos pronto para la revancha! 💪😄",
+    ],
+    multa_pendiente: [
+      "{saludo} {nombre} 👋 Tienes una multa pendiente de S/ {monto}. Cuando puedas, súbela en la app para ponerte al día 🙏⚽",
+      "{saludo} {nombre}, un recordatorio nomás: te queda una multa de S/ {monto} sin pagar. Yapea y sube tu comprobante cuando puedas 💸",
+    ],
   };
   for (const [tipo, textos] of Object.entries(plantillasPorTipo)) {
     for (const texto of textos) {

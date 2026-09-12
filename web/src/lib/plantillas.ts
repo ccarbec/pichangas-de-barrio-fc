@@ -5,6 +5,8 @@ export const TIPOS_PLANTILLA = [
   "pago_pendiente",
   "cupo_liberado",
   "promovido",
+  "cierre_partido",
+  "multa_pendiente",
 ] as const;
 
 export type TipoPlantilla = (typeof TIPOS_PLANTILLA)[number];
