@@ -3,42 +3,55 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
-import { esArquero } from "@/lib/estilos";
 
 const MAX_ARQUEROS_POR_PARTIDO = 2;
 
-async function inscribirJugadorInterno(partidoId: number, jugadorId: number, cupoMax: number) {
+// El cupo (general y de arqueros) se decide DENTRO de esta única sentencia
+// SQL — no con un SELECT para contar y despué un INSERT/UPDATE separado.
+// Si dos jugadores confirman en el mismo instante, cada conexión ejecuta esta
+// sentencia como una unidad atómica: SQLite serializa los escritores, así que
+// la segunda sentencia en llegar siempre cuenta los cupos ya con el efecto de
+// la primera aplicado. Con el patrón anterior (leer cupos, decidir en código,
+// recién ahí escribir) ambas lecturas podían ocurrir antes de que cualquiera
+// escribiera, dejando confirmar de más jugadores o arqueros que el límite.
+async function inscribirJugadorInterno(
+  partidoId: number,
+  jugadorId: number,
+  cupoMax: number
+): Promise<"confirmado" | "lista_espera"> {
   return prisma.$transaction(async (tx) => {
-    const jugador = await tx.jugador.findUniqueOrThrow({ where: { id: jugadorId } });
-    const existente = await tx.inscripcion.findUnique({
+    await tx.$executeRaw`
+      INSERT INTO inscripciones (partido_id, jugador_id, estado, fecha_inscripcion)
+      VALUES (
+        ${partidoId},
+        ${jugadorId},
+        CASE
+          WHEN (
+            SELECT COUNT(*) FROM inscripciones WHERE partido_id = ${partidoId} AND estado = 'confirmado'
+          ) >= ${cupoMax}
+            THEN 'lista_espera'
+          WHEN (
+            SELECT LOWER(COALESCE(posicion, '')) LIKE '%arquero%' OR LOWER(COALESCE(posicion, '')) LIKE '%portero%'
+            FROM jugadores WHERE id = ${jugadorId}
+          ) AND (
+            SELECT COUNT(*) FROM inscripciones i
+            JOIN jugadores j ON j.id = i.jugador_id
+            WHERE i.partido_id = ${partidoId} AND i.estado = 'confirmado'
+              AND (LOWER(COALESCE(j.posicion, '')) LIKE '%arquero%' OR LOWER(COALESCE(j.posicion, '')) LIKE '%portero%')
+          ) >= ${MAX_ARQUEROS_POR_PARTIDO}
+            THEN 'lista_espera'
+          ELSE 'confirmado'
+        END,
+        datetime('now','localtime')
+      )
+      ON CONFLICT(partido_id, jugador_id) DO UPDATE SET
+        estado = excluded.estado,
+        asistio = NULL
+    `;
+    const actualizado = await tx.inscripcion.findUniqueOrThrow({
       where: { partidoId_jugadorId: { partidoId, jugadorId } },
     });
-    const confirmados = await tx.inscripcion.findMany({
-      where: { partidoId, estado: "confirmado" },
-      select: { jugador: { select: { posicion: true } } },
-    });
-
-    let nuevoEstado: "confirmado" | "lista_espera";
-    if (confirmados.length >= cupoMax) {
-      nuevoEstado = "lista_espera";
-    } else if (
-      esArquero(jugador.posicion) &&
-      confirmados.filter((i) => esArquero(i.jugador.posicion)).length >= MAX_ARQUEROS_POR_PARTIDO
-    ) {
-      nuevoEstado = "lista_espera";
-    } else {
-      nuevoEstado = "confirmado";
-    }
-
-    if (existente) {
-      await tx.inscripcion.update({
-        where: { id: existente.id },
-        data: { estado: nuevoEstado, asistio: null },
-      });
-    } else {
-      await tx.inscripcion.create({ data: { partidoId, jugadorId, estado: nuevoEstado } });
-    }
-    return nuevoEstado;
+    return actualizado.estado as "confirmado" | "lista_espera";
   });
 }
 
@@ -79,31 +92,40 @@ export async function cancelarInscripcion(inscripcionId: number) {
 
   const inscripcion = await prisma.inscripcion.findUniqueOrThrow({ where: { id: inscripcionId } });
 
+  // Misma idea que inscribirJugadorInterno: elegir "a quién le toca" y
+  // confirmarlo es una sola sentencia UPDATE con el candidato como subquery,
+  // no un SELECT para elegir y después un UPDATE aparte — así dos
+  // cancelaciones concurrentes del mismo partido nunca promueven al mismo
+  // candidato dos veces, ni suben a un segundo arquero cuando solo se liberó
+  // un cupo de arquero.
   const promovidoJugadorId = await prisma.$transaction(async (tx) => {
     await tx.inscripcion.update({ where: { id: inscripcionId }, data: { estado: "cancelado" } });
 
     if (inscripcion.estado !== "confirmado") return null;
 
-    const espera = await tx.inscripcion.findMany({
-      where: { partidoId: inscripcion.partidoId, estado: "lista_espera" },
-      select: { id: true, jugadorId: true, jugador: { select: { posicion: true } } },
-      orderBy: { fechaInscripcion: "asc" },
-    });
-    if (espera.length === 0) return null;
-
-    const confirmados = await tx.inscripcion.findMany({
-      where: { partidoId: inscripcion.partidoId, estado: "confirmado" },
-      select: { jugador: { select: { posicion: true } } },
-    });
-    const arquerosConfirmados = confirmados.filter((i) => esArquero(i.jugador.posicion)).length;
-
-    const siguiente = espera.find(
-      (i) => !esArquero(i.jugador.posicion) || arquerosConfirmados < MAX_ARQUEROS_POR_PARTIDO
-    );
-    if (!siguiente) return null;
-
-    await tx.inscripcion.update({ where: { id: siguiente.id }, data: { estado: "confirmado" } });
-    return siguiente.jugadorId;
+    const filas = await tx.$queryRaw<{ jugador_id: number }[]>`
+      UPDATE inscripciones
+      SET estado = 'confirmado'
+      WHERE id = (
+        SELECT i.id FROM inscripciones i
+        JOIN jugadores j ON j.id = i.jugador_id
+        WHERE i.partido_id = ${inscripcion.partidoId}
+          AND i.estado = 'lista_espera'
+          AND (
+            NOT (LOWER(COALESCE(j.posicion, '')) LIKE '%arquero%' OR LOWER(COALESCE(j.posicion, '')) LIKE '%portero%')
+            OR (
+              SELECT COUNT(*) FROM inscripciones i2
+              JOIN jugadores j2 ON j2.id = i2.jugador_id
+              WHERE i2.partido_id = ${inscripcion.partidoId} AND i2.estado = 'confirmado'
+                AND (LOWER(COALESCE(j2.posicion, '')) LIKE '%arquero%' OR LOWER(COALESCE(j2.posicion, '')) LIKE '%portero%')
+            ) < ${MAX_ARQUEROS_POR_PARTIDO}
+          )
+        ORDER BY i.fecha_inscripcion ASC
+        LIMIT 1
+      )
+      RETURNING jugador_id
+    `;
+    return filas[0]?.jugador_id ?? null;
   });
 
   revalidatePath("/dashboard/partidos");
