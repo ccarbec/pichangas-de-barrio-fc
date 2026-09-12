@@ -19,7 +19,7 @@ export function AppShell({
     <div className="flex min-h-screen">
       <Sidebar esAdmin={esAdmin} abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopNav nombre={nombre} onAbrirMenu={() => setMenuAbierto(true)} />
+        <TopNav nombre={nombre} esAdmin={esAdmin} onAbrirMenu={() => setMenuAbierto(true)} />
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
