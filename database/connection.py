@@ -184,6 +184,12 @@ MIGRACIONES = [
     "ALTER TABLE jugadores ADD COLUMN stat_tecnica INTEGER DEFAULT 3",
     "ALTER TABLE jugadores ADD COLUMN stat_defensa INTEGER DEFAULT 3",
     "ALTER TABLE jugadores ADD COLUMN stat_fisico INTEGER DEFAULT 3",
+    "ALTER TABLE inscripciones ADD COLUMN equipo TEXT",
+    "ALTER TABLE inscripciones ADD COLUMN pos_x REAL",
+    "ALTER TABLE inscripciones ADD COLUMN pos_y REAL",
+    "ALTER TABLE inscripciones ADD COLUMN goles INTEGER DEFAULT 0",
+    "ALTER TABLE inscripciones ADD COLUMN amarillas INTEGER DEFAULT 0",
+    "ALTER TABLE inscripciones ADD COLUMN roja INTEGER DEFAULT 0",
 ]
 
 
