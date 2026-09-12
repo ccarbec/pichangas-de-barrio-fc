@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
 import { nombreCompleto } from "@/lib/estilos";
-import { redimensionarImagen } from "@/lib/imagenes";
+import { redimensionarImagenOError } from "@/lib/imagenes";
 
 const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
 
@@ -31,7 +31,9 @@ export async function registrarPago(formData: FormData): Promise<{ error?: strin
   }
 
   const original = Buffer.from(await archivo.arrayBuffer());
-  const { bytes, mime } = await redimensionarImagen(original, 1200);
+  const resultado = await redimensionarImagenOError(original, 1200);
+  if ("error" in resultado) return { error: resultado.error };
+  const { bytes, mime } = resultado;
   const existente = await prisma.pago.findUnique({ where: { inscripcionId } });
 
   if (existente) {

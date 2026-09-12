@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
-import { redimensionarImagen } from "@/lib/imagenes";
+import { redimensionarImagenOError } from "@/lib/imagenes";
 
 export async function crearEstadio(formData: FormData) {
   await requireAdmin();
@@ -47,7 +47,9 @@ export async function subirFotoEstadio(formData: FormData): Promise<{ error?: st
   if (archivo.size > 5 * 1024 * 1024) return { error: "La foto pesa más de 5MB." };
 
   const original = Buffer.from(await archivo.arrayBuffer());
-  const { bytes, mime } = await redimensionarImagen(original, 800);
+  const resultado = await redimensionarImagenOError(original, 800);
+  if ("error" in resultado) return { error: resultado.error };
+  const { bytes, mime } = resultado;
   await prisma.estadio.update({
     where: { id: estadioId },
     data: { fotoImg: bytes, fotoMime: mime },

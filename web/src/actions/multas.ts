@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
-import { redimensionarImagen } from "@/lib/imagenes";
+import { redimensionarImagenOError } from "@/lib/imagenes";
 
 const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
 
@@ -27,7 +27,9 @@ export async function subirComprobanteMulta(formData: FormData): Promise<{ error
     return { error: `La imagen pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB — el máximo es 5 MB.` };
   }
   const original = Buffer.from(await archivo.arrayBuffer());
-  const { bytes, mime } = await redimensionarImagen(original, 1200);
+  const resultado = await redimensionarImagenOError(original, 1200);
+  if ("error" in resultado) return { error: resultado.error };
+  const { bytes, mime } = resultado;
 
   await prisma.multa.update({
     where: { id: multaId },
