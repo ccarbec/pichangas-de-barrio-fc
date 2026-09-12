@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { normalizarTelefono } from "@/lib/telefono";
 
-// Sin esto, Next prerendería esta página en el build y congelaría el
-// número de Yape de ese momento — necesita leerlo fresco en cada visita,
-// porque el admin lo puede cambiar en Configuración en cualquier momento.
-export const dynamic = "force-dynamic";
+// Celular del admin que atiende los restablecimientos de contraseña —
+// no necesariamente el mismo que el de Yape (Configuración > Yape), que
+// puede ser de otra persona encargada de cobros.
+const TELEFONO_ADMIN = normalizarTelefono("964310391");
 
-export default async function ResetPasswordPage() {
-  const config = await prisma.clubConfig.findUnique({ where: { id: 1 } });
-  const telefonoAdmin = config?.telefonoYape ? normalizarTelefono(config.telefonoYape) : null;
+export default function ResetPasswordPage() {
   const mensaje = encodeURIComponent("Hola, se me olvidó mi contraseña de la app de Pichangas de Barrio FC. ¿Me ayudas a restablecerla?");
 
   return (
@@ -25,18 +22,14 @@ export default async function ResetPasswordPage() {
           WhatsApp y te la restablece él mismo.
         </p>
 
-        {telefonoAdmin ? (
-          <a
-            href={`https://wa.me/${telefonoAdmin}?text=${mensaje}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mb-4 block rounded-lg bg-[var(--accent)] py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
-          >
-            💬 Escribir al admin por WhatsApp
-          </a>
-        ) : (
-          <p className="mb-4 text-sm text-[var(--muted)]">Contacta al admin del club por WhatsApp.</p>
-        )}
+        <a
+          href={`https://wa.me/${TELEFONO_ADMIN}?text=${mensaje}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-4 block rounded-lg bg-[var(--accent)] py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90"
+        >
+          💬 Escribir al admin por WhatsApp
+        </a>
 
         <Link href="/login" className="text-xs text-[var(--muted)] transition-colors hover:text-[var(--foreground)]">
           Volver a iniciar sesión
