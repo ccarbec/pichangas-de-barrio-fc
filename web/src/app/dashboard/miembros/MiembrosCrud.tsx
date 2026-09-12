@@ -10,6 +10,7 @@ import {
 } from "@/actions/jugadores";
 import { Badge } from "../../components/Badge";
 import { Toast } from "../../components/Toast";
+import { Estrellas } from "../../components/Estrellas";
 import { nombreCompleto, POSICIONES_SUGERIDAS } from "@/lib/estilos";
 
 type Jugador = {
@@ -309,20 +310,8 @@ function CampoEstrellas({ label, name, valorInicial }: { label: string; name: st
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-sm">{label}</span>
-      <div className="flex items-center gap-1">
-        <input type="hidden" name={name} value={valor} />
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setValor(n)}
-            aria-label={`${label}: ${n} de 5`}
-            className={`text-xl leading-none transition-transform hover:scale-110 ${n <= valor ? "" : "text-[var(--muted)] opacity-50"}`}
-          >
-            {n <= valor ? "⭐" : "☆"}
-          </button>
-        ))}
-      </div>
+      <input type="hidden" name={name} value={valor} />
+      <Estrellas valor={valor} onChange={setValor} label={label} />
     </div>
   );
 }

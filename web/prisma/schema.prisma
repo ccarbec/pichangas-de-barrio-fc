@@ -94,6 +94,16 @@ model Inscripcion {
   asistio          String?
   fechaInscripcion String   @default("") @map("fecha_inscripcion")
 
+  // Cancha visual para armar equipos (src/lib/equipos.ts): equipo 'A' | 'B',
+  // posX/posY en porcentaje (0-100) de dónde quedó el jugador al arrastrarlo.
+  equipo String? @map("equipo")
+  posX   Float?  @map("pos_x")
+  posY   Float?  @map("pos_y")
+  // Eventos del partido para este jugador.
+  goles     Int     @default(0)
+  amarillas Int     @default(0)
+  roja      Boolean @default(false)
+
   partido Partido @relation(fields: [partidoId], references: [id])
   jugador Jugador @relation(fields: [jugadorId], references: [id])
   pago    Pago?

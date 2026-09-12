@@ -197,3 +197,53 @@ export async function marcarAsistenciaMultiple(
   revalidatePath("/dashboard/partidos");
   return {};
 }
+
+export async function guardarPosicionEnCancha(
+  inscripcionId: number,
+  equipo: "A" | "B",
+  posX: number,
+  posY: number
+) {
+  await requireAdmin();
+  await prisma.inscripcion.update({
+    where: { id: inscripcionId },
+    data: {
+      equipo,
+      posX: Math.min(100, Math.max(0, posX)),
+      posY: Math.min(100, Math.max(0, posY)),
+    },
+  });
+  revalidatePath("/dashboard/partidos");
+}
+
+export async function guardarFormacionInicial(
+  asignaciones: { inscripcionId: number; equipo: "A" | "B"; posX: number; posY: number }[]
+) {
+  await requireAdmin();
+  if (asignaciones.length === 0) return;
+  await prisma.$transaction(
+    asignaciones.map((a) =>
+      prisma.inscripcion.update({
+        where: { id: a.inscripcionId },
+        data: { equipo: a.equipo, posX: a.posX, posY: a.posY },
+      })
+    )
+  );
+  revalidatePath("/dashboard/partidos");
+}
+
+export async function guardarEventosPartido(
+  inscripcionId: number,
+  datos: { goles?: number; amarillas?: number; roja?: boolean }
+) {
+  await requireAdmin();
+  await prisma.inscripcion.update({
+    where: { id: inscripcionId },
+    data: {
+      goles: datos.goles != null ? Math.max(0, datos.goles) : undefined,
+      amarillas: datos.amarillas != null ? Math.max(0, Math.min(2, datos.amarillas)) : undefined,
+      roja: datos.roja,
+    },
+  });
+  revalidatePath("/dashboard/partidos");
+}

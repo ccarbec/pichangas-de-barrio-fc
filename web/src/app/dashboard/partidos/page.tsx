@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { obtenerUsuarioActual } from "@/lib/session";
 import { esArquero } from "@/lib/estilos";
+import { aDataUrl } from "@/lib/imagenes";
 import { EmptyState } from "../../components/EmptyState";
 import { NuevoPartidoForm } from "./NuevoPartidoForm";
 import { PartidoAdmin } from "./PartidoAdmin";
@@ -47,6 +48,12 @@ export default async function PartidosPage() {
         jugadorId: true,
         estado: true,
         asistio: true,
+        equipo: true,
+        posX: true,
+        posY: true,
+        goles: true,
+        amarillas: true,
+        roja: true,
         jugador: {
           select: {
             id: true,
@@ -57,6 +64,8 @@ export default async function PartidosPage() {
             statTecnica: true,
             statDefensa: true,
             statFisico: true,
+            fotoImg: true,
+            fotoMime: true,
             usuario: { select: { nombre: true, telefono: true } },
           },
         },
@@ -73,8 +82,16 @@ export default async function PartidosPage() {
       : Promise.resolve([]),
   ]);
 
-  const inscripcionesPorPartido = new Map<number, typeof inscripciones>();
-  for (const i of inscripciones) {
+  const inscripcionesConFoto = inscripciones.map((i) => ({
+    ...i,
+    jugador: {
+      ...i.jugador,
+      foto: aDataUrl(i.jugador.fotoImg, i.jugador.fotoMime),
+    },
+  }));
+
+  const inscripcionesPorPartido = new Map<number, typeof inscripcionesConFoto>();
+  for (const i of inscripcionesConFoto) {
     const lista = inscripcionesPorPartido.get(i.partidoId) ?? [];
     lista.push(i);
     inscripcionesPorPartido.set(i.partidoId, lista);

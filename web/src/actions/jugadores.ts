@@ -48,6 +48,31 @@ function statDesdeFormulario(formData: FormData, campo: string): number {
   return Math.min(5, Math.max(1, valor));
 }
 
+function limitarStat(valor: number): number {
+  return Math.min(5, Math.max(1, Math.round(valor)));
+}
+
+// Igual que la parte de estadísticas de actualizarJugador, pero suelta —
+// para editarlas desde el panel del campo de juego sin mandar el resto
+// del formulario de Gestión Miembros.
+export async function actualizarStatsJugador(
+  jugadorId: number,
+  stats: { statVelocidad: number; statTecnica: number; statDefensa: number; statFisico: number }
+) {
+  await requireAdmin();
+  await prisma.jugador.update({
+    where: { id: jugadorId },
+    data: {
+      statVelocidad: limitarStat(stats.statVelocidad),
+      statTecnica: limitarStat(stats.statTecnica),
+      statDefensa: limitarStat(stats.statDefensa),
+      statFisico: limitarStat(stats.statFisico),
+    },
+  });
+  revalidatePath("/dashboard/partidos");
+  revalidatePath("/dashboard/miembros");
+}
+
 export async function actualizarJugador(formData: FormData) {
   await requireAdmin();
 
