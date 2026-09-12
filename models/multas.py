@@ -187,6 +187,30 @@ def listar_todas_pendientes():
         conexion.close()
 
 
+def listar_pendientes_con_contacto():
+    """Multas en 'debe' con teléfono y datos del partido asociado (si tiene),
+    para el recordatorio automático de WhatsApp de multas sin pagar."""
+    conexion = get_connection()
+    try:
+        filas = conexion.execute(
+            """
+            SELECT
+                multas.id, multas.tipo, multas.monto, multas.fecha_creacion,
+                usuarios.nombre, usuarios.telefono, jugadores.apodo,
+                partidos.fecha AS partido_fecha, partidos.hora AS partido_hora
+            FROM multas
+            JOIN jugadores ON jugadores.id = multas.jugador_id
+            JOIN usuarios ON usuarios.id = jugadores.usuario_id
+            LEFT JOIN partidos ON partidos.id = multas.partido_id
+            WHERE multas.estado = 'debe'
+            ORDER BY multas.fecha_creacion
+            """
+        ).fetchall()
+        return [dict(f) for f in filas]
+    finally:
+        conexion.close()
+
+
 def listar_pendientes_verificacion():
     """Multas con comprobante subido, esperando que el admin las apruebe o
     rechace (para la página Pagos)."""

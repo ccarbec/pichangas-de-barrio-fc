@@ -81,6 +81,19 @@ def armar_mensaje(texto_plantilla, jugador, partido):
     return texto_plantilla.format_map(variables)
 
 
+def armar_mensaje_multa(texto_plantilla, jugador, monto, fecha=""):
+    """Igual que armar_mensaje, pero para el recordatorio de una multa —
+    que no siempre tiene un partido asociado (ej. multa creada a mano),
+    así que usa {monto} en vez de {cancha}/{costo}."""
+    variables = _VariablesSeguras(
+        nombre=jugador.get("apodo") or jugador["nombre"],
+        monto=f"{monto:.2f}",
+        fecha=fecha,
+        saludo=saludo_actual(),
+    )
+    return texto_plantilla.format_map(variables)
+
+
 def _matar_procesos_huerfanos():
     """Si una corrida anterior dejó Chrome/chromedriver abiertos sobre este
     mismo perfil (por un cuelgue o un cierre a la fuerza), un nuevo intento

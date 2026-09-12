@@ -18,6 +18,12 @@ Reglas:
      partido y sigue sin pago verificado, se le libera el cupo (se
      cancela su inscripción) y, si había alguien en lista de espera, se
      le sube a confirmado y se le avisa.
+  4. Multa pendiente: una sola vez por multa (no se repite cada hora), a
+     quien tenga una multa en estado 'debe'.
+
+El mensaje de cierre de partido (aliento/motivación después de jugar) NO
+es automático — se manda a mano con scripts/enviar_mensaje_cierre.py
+cuando Carlos quiera, después de cerrar un partido como jugado.
 
 Cada acción se registra en envios_recordatorios para no repetirla — por
 eso este script se puede correr cada hora sin miedo a mandar el mismo
@@ -34,7 +40,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.connection import init_db
-from models import envios_recordatorios, inscripciones, partidos, plantillas_mensajes
+from models import envios_recordatorios, inscripciones, multas, partidos, plantillas_mensajes
 from whatsapp import client as whatsapp_client
 
 VENTANA_RECORDATORIO_PARTIDO = (8, 10)  # hora local, [inicio, fin)
@@ -60,6 +66,33 @@ def _agregar_pendiente(pendientes, jugador, partido, tipo):
             "partido_fecha": partido["fecha"],
             "partido_hora": partido["hora"],
             "tipo": tipo,
+        }
+    )
+
+
+def _agregar_pendiente_multa(pendientes, multa):
+    """A diferencia del recordatorio de pago de un partido (que tiene fecha
+    límite), una multa se queda 'debe' indefinidamente hasta que se paga —
+    así que este aviso se manda una sola vez por multa, no se repite cada
+    hora. Usa el partido asociado como clave de "ya se avisó" si lo tiene;
+    si la multa se creó a mano (sin partido), usa su propia fecha."""
+    fecha_clave = multa["partido_fecha"] or multa["fecha_creacion"][:10]
+    hora_clave = multa["partido_hora"] or "00:00"
+    if envios_recordatorios.ya_enviado(multa["telefono"], fecha_clave, hora_clave, "multa_pendiente"):
+        return
+    variantes = plantillas_mensajes.listar_variantes("multa_pendiente")
+    if not variantes:
+        return
+    texto_plantilla = random.choice(variantes)
+    jugador = {"nombre": multa["nombre"], "apodo": multa["apodo"], "telefono": multa["telefono"]}
+    pendientes.append(
+        {
+            "telefono": multa["telefono"],
+            "texto": whatsapp_client.armar_mensaje_multa(texto_plantilla, jugador, multa["monto"], fecha_clave),
+            "jugador_nombre": jugador.get("apodo") or jugador["nombre"],
+            "partido_fecha": fecha_clave,
+            "partido_hora": hora_clave,
+            "tipo": "multa_pendiente",
         }
     )
 
@@ -104,6 +137,9 @@ def construir_pendientes():
                 _agregar_pendiente(pendientes, jugador, partido, "cupo_liberado")
                 if promovido:
                     _agregar_pendiente(pendientes, promovido, partido, "promovido")
+
+    for multa in multas.listar_pendientes_con_contacto():
+        _agregar_pendiente_multa(pendientes, multa)
 
     return pendientes
 
