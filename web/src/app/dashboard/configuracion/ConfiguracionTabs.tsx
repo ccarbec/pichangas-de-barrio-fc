@@ -161,7 +161,7 @@ function EstadiosTab({ estadios }: { estadios: Estadio[] }) {
               )}
               <form action={(fd) => run(() => subirFotoEstadio(fd), "Foto actualizada.")} className="flex items-center gap-2">
                 <input type="hidden" name="estadioId" value={seleccionado.id} />
-                <input type="file" name="foto" accept="image/png,image/jpeg" className="text-xs" />
+                <input type="file" name="foto" accept="image/*" className="text-xs" />
                 <button type="submit" className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs transition-colors hover:border-[var(--accent)]">
                   Subir foto
                 </button>

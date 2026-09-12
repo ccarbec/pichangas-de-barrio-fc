@@ -56,7 +56,7 @@ export function PerfilForm({ jugador }: { jugador: Jugador }) {
             className="flex flex-col items-center gap-2"
           >
             <input type="hidden" name="jugadorId" value={jugador.id} />
-            <input type="file" name="foto" accept="image/png,image/jpeg" className="text-xs" />
+            <input type="file" name="foto" accept="image/*" className="text-xs" />
             <button type="submit" disabled={pending} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition-colors hover:border-[var(--accent)]">
               Guardar foto
             </button>

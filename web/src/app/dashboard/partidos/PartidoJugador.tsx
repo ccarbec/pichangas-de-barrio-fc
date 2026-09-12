@@ -126,7 +126,7 @@ export function PartidoJugador({
               <input
                 type="file"
                 name="comprobante"
-                accept="image/png,image/jpeg"
+                accept="image/*"
                 required
                 disabled={enviandoComprobante}
                 className="text-sm text-[var(--muted)]"

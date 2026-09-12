@@ -78,7 +78,7 @@ function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) 
           <input
             type="file"
             name="comprobante"
-            accept="image/png,image/jpeg"
+            accept="image/*"
             required
             disabled={pending}
             className="text-xs text-[var(--muted)]"
