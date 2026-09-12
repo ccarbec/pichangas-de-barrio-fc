@@ -17,6 +17,7 @@ no hace falta volver a escanear.
 
 import os
 import shutil
+import subprocess
 import time
 import urllib.parse
 from datetime import datetime
@@ -80,7 +81,27 @@ def armar_mensaje(texto_plantilla, jugador, partido):
     return texto_plantilla.format_map(variables)
 
 
+def _matar_procesos_huerfanos():
+    """Si una corrida anterior dejó Chrome/chromedriver abiertos sobre este
+    mismo perfil (por un cuelgue o un cierre a la fuerza), un nuevo intento
+    de abrir el perfil choca con el bloqueo y Chrome se cierra apenas
+    arranca. Se limpia antes de cada intento para no depender de que la
+    corrida anterior haya cerrado todo bien."""
+    try:
+        subprocess.run(
+            [
+                "wmic", "process", "where",
+                f"(name='chrome.exe' or name='chromedriver.exe') and CommandLine like '%{os.path.basename(PERFIL_CHROME)}%'",
+                "call", "terminate",
+            ],
+            capture_output=True, timeout=15,
+        )
+    except Exception:
+        pass  # limpieza best-effort — si falla, seguimos igual con el intento de abrir
+
+
 def _abrir_navegador():
+    _matar_procesos_huerfanos()
     opciones = Options()
     opciones.add_argument(f"--user-data-dir={PERFIL_CHROME}")
     opciones.add_argument("--profile-directory=Default")
