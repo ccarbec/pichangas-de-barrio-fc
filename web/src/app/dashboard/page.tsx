@@ -23,18 +23,20 @@ export default async function DashboardPage() {
       prisma.jugador.count({ where: { estado: "activo" } }),
       prisma.jugador.count(),
       prisma.partido.count({ where: { estado: "programado" } }),
-      prisma.pago.count({ where: { estado: "pendiente" } }),
-      prisma.jugador.findMany({
-        take: 5,
-        orderBy: { id: "desc" },
-        select: {
-          id: true,
-          apellidos: true,
-          apodo: true,
-          estado: true,
-          usuario: { select: { nombre: true, rol: true } },
-        },
-      }),
+      esAdmin ? prisma.pago.count({ where: { estado: "pendiente" } }) : Promise.resolve(0),
+      esAdmin
+        ? prisma.jugador.findMany({
+            take: 5,
+            orderBy: { id: "desc" },
+            select: {
+              id: true,
+              apellidos: true,
+              apodo: true,
+              estado: true,
+              usuario: { select: { nombre: true, rol: true } },
+            },
+          })
+        : Promise.resolve([]),
       prisma.jugador.findMany({
         where: { estado: "activo" },
         select: {
@@ -83,14 +85,14 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-4 ${esAdmin ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         <MetricCard
           label="Jugadores activos"
           value={jugadoresActivos}
           hint={`${totalRegistrados} registrados en total`}
         />
         <MetricCard label="Partidos programados" value={partidosProgramados} />
-        <MetricCard label="Pagos por verificar" value={pagosPendientes} />
+        {esAdmin && <MetricCard label="Pagos por verificar" value={pagosPendientes} />}
       </div>
 
       {(topJugados.length > 0 || topIncidencias.length > 0) && (
@@ -110,37 +112,39 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-        <h2 className="mb-4 text-sm font-semibold text-[var(--muted)]">Gestión Miembros</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
-                <th className="pb-2">Jugador</th>
-                <th className="pb-2">Rol</th>
-                <th className="pb-2">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ultimosJugadores.map((j) => (
-                <tr key={j.id} className="border-b border-[var(--border)]/50 last:border-0">
-                  <td className="py-3 font-medium whitespace-nowrap">
-                    {nombreCompleto(j)}
-                  </td>
-                  <td className="py-3">
-                    <Badge variant="role">{j.usuario.rol.toUpperCase()}</Badge>
-                  </td>
-                  <td className="py-3">
-                    <Badge variant={j.estado === "activo" ? "active" : "danger"}>
-                      {j.estado.toUpperCase()}
-                    </Badge>
-                  </td>
+      {esAdmin && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+          <h2 className="mb-4 text-sm font-semibold text-[var(--muted)]">Gestión Miembros</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
+                  <th className="pb-2">Jugador</th>
+                  <th className="pb-2">Rol</th>
+                  <th className="pb-2">Estado</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ultimosJugadores.map((j) => (
+                  <tr key={j.id} className="border-b border-[var(--border)]/50 last:border-0">
+                    <td className="py-3 font-medium whitespace-nowrap">
+                      {nombreCompleto(j)}
+                    </td>
+                    <td className="py-3">
+                      <Badge variant="role">{j.usuario.rol.toUpperCase()}</Badge>
+                    </td>
+                    <td className="py-3">
+                      <Badge variant={j.estado === "activo" ? "active" : "danger"}>
+                        {j.estado.toUpperCase()}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
