@@ -190,6 +190,8 @@ MIGRACIONES = [
     "ALTER TABLE inscripciones ADD COLUMN goles INTEGER DEFAULT 0",
     "ALTER TABLE inscripciones ADD COLUMN amarillas INTEGER DEFAULT 0",
     "ALTER TABLE inscripciones ADD COLUMN roja INTEGER DEFAULT 0",
+    "ALTER TABLE club_config ADD COLUMN qr_yape_img BLOB",
+    "ALTER TABLE club_config ADD COLUMN qr_yape_mime TEXT",
 ]
 
 
