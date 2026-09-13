@@ -108,6 +108,15 @@ export function CampoDeJuego({
   }, []);
   const arrastre = useRef<{ inscripcionId: number; movio: boolean } | null>(null);
 
+  function sortearEquipos() {
+    const nuevaLista = posicionesIniciales(lista);
+    setLista(nuevaLista);
+    setSeleccionado(null);
+    guardarFormacionInicial(
+      nuevaLista.map((j) => ({ inscripcionId: j.inscripcionId, equipo: j.equipo ?? "A", posX: j.posX ?? 50, posY: j.posY ?? 50 }))
+    );
+  }
+
   function actualizarJugadorLocal(inscripcionId: number, cambios: Partial<JugadorCancha>) {
     setLista((prev) => prev.map((j) => (j.inscripcionId === inscripcionId ? { ...j, ...cambios } : j)));
     setSeleccionado((prev) => (prev && prev.inscripcionId === inscripcionId ? { ...prev, ...cambios } : prev));
@@ -147,9 +156,18 @@ export function CampoDeJuego({
     <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold">🏟️ Cancha — arrastra a cada jugador, haz clic para gestionarlo</p>
-        <button onClick={onCerrar} className="text-xs text-[var(--muted)] hover:text-[var(--foreground)]">
-          ✕ Cerrar
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={sortearEquipos}
+            className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium transition-colors hover:border-[var(--accent)]"
+            title="Reparte a los jugadores en dos equipos al azar, buscando que el nivel (estadísticas) quede parejo"
+          >
+            🎲 Sortear equipos
+          </button>
+          <button onClick={onCerrar} className="text-xs text-[var(--muted)] hover:text-[var(--foreground)]">
+            ✕ Cerrar
+          </button>
+        </div>
       </div>
 
       <div
