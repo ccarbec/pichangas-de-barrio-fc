@@ -28,6 +28,7 @@ export async function registrarJugador(formData: FormData): Promise<{ error?: st
   const celular = normalizarTelefono(String(formData.get("celular") ?? ""));
   const password = String(formData.get("password") ?? "");
   const posicion = String(formData.get("posicion") ?? "").trim();
+  const dni = String(formData.get("dni") ?? "").trim();
 
   if (!nombres) return { error: "Escribe tu nombre." };
   if (celular.length !== 11) return { error: "Escribe un celular válido (9 dígitos)." };
@@ -52,6 +53,7 @@ export async function registrarJugador(formData: FormData): Promise<{ error?: st
       usuarioId: usuario.id,
       apellidos,
       posicion: posicion || null,
+      dni: dni || null,
     },
   });
 

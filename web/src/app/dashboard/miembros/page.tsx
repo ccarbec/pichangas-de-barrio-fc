@@ -27,6 +27,7 @@ export default async function MiembrosPage() {
     apellidos: j.apellidos,
     apodo: j.apodo,
     posicion: j.posicion,
+    dni: j.dni,
     equipoHincha: j.equipoHincha,
     camiseta: j.camiseta,
     telefono: j.usuario.telefono,

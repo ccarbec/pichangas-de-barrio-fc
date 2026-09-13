@@ -21,12 +21,6 @@ export default function RegistroPage() {
           <p className="text-sm text-[var(--muted)]">Únete al club para inscribirte a las pichangas.</p>
         </div>
 
-        <datalist id="posiciones-sugeridas">
-          {POSICIONES_SUGERIDAS.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
-
         <form
           action={(fd) => {
             setError(null);
@@ -71,10 +65,25 @@ export default function RegistroPage() {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-[var(--muted)]">Posición (opcional)</label>
-            <input
+            <select
               name="posicion"
-              list="posiciones-sugeridas"
-              placeholder="Ej: Volante, Cualquiera"
+              defaultValue=""
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            >
+              <option value="">Sin definir</option>
+              {POSICIONES_SUGERIDAS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[var(--muted)]">DNI (opcional)</label>
+            <input
+              name="dni"
+              maxLength={15}
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             />
           </div>

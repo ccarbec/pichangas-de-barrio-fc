@@ -60,6 +60,7 @@ export default async function PerfilPage() {
           apellidos: jugador.apellidos,
           apodo: jugador.apodo,
           posicion: jugador.posicion,
+          dni: jugador.dni,
           equipoHincha: jugador.equipoHincha,
           camiseta: jugador.camiseta,
           resena: jugador.resena,

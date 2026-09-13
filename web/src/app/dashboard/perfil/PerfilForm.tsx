@@ -11,6 +11,7 @@ type Jugador = {
   apellidos: string;
   apodo: string | null;
   posicion: string | null;
+  dni: string | null;
   equipoHincha: string;
   camiseta: string;
   resena: string;
@@ -83,17 +84,18 @@ export function PerfilForm({ jugador }: { jugador: Jugador }) {
           </div>
           <div>
             <label className="mb-1 block text-xs text-[var(--muted)]">Posición</label>
-            <datalist id="posiciones-sugeridas">
+            <select name="posicion" defaultValue={jugador.posicion ?? ""} className={inputClass}>
+              <option value="">Sin definir</option>
               {POSICIONES_SUGERIDAS.map((p) => (
-                <option key={p} value={p} />
+                <option key={p} value={p}>
+                  {p}
+                </option>
               ))}
-            </datalist>
-            <input
-              name="posicion"
-              list="posiciones-sugeridas"
-              defaultValue={jugador.posicion ?? ""}
-              className={inputClass}
-            />
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[var(--muted)]">DNI</label>
+            <input name="dni" maxLength={15} defaultValue={jugador.dni ?? ""} className={inputClass} />
           </div>
           <div>
             <label className="mb-1 block text-xs text-[var(--muted)]">Hincha de qué equipo</label>

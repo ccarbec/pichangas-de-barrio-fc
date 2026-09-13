@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS jugadores (
     apodo TEXT,
     apellidos TEXT DEFAULT '',
     posicion TEXT,
+    dni TEXT,
     equipo_hincha TEXT DEFAULT '',
     camiseta TEXT DEFAULT '',
     foto_img BLOB,
@@ -200,6 +201,7 @@ MIGRACIONES = [
     "ALTER TABLE partidos ADD COLUMN num_equipos INTEGER DEFAULT 2",
     "ALTER TABLE partidos ADD COLUMN arqueros_min INTEGER DEFAULT 1",
     "ALTER TABLE partidos ADD COLUMN arqueros_max INTEGER DEFAULT 2",
+    "ALTER TABLE jugadores ADD COLUMN dni TEXT",
 ]
 
 

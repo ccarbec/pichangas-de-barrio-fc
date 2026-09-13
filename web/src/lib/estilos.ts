@@ -35,7 +35,7 @@ export const ETIQUETA_PAGO: Record<string, { texto: string; variant: "active" | 
   rechazado: { texto: "Rechazado", variant: "danger" },
 };
 
-export const POSICIONES_SUGERIDAS = ["Arquero", "Defensa", "Mediocampo", "Delantero", "Cualquiera"];
+export const POSICIONES_SUGERIDAS = ["Arquero", "Defensa", "Mediocampo", "Delantero"];
 
 export function categoriaPosicion(posicion?: string | null): "arquero" | "defensa" | "mediocampo" | "delantero" | "otros" {
   if (esArquero(posicion)) return "arquero";

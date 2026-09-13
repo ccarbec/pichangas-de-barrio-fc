@@ -20,6 +20,7 @@ type Jugador = {
   apellidos: string;
   apodo: string | null;
   posicion: string | null;
+  dni: string | null;
   equipoHincha: string;
   camiseta: string;
   telefono: string;
@@ -73,11 +74,6 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
   return (
     <div className="flex flex-col gap-4">
       {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
-      <datalist id="posiciones-sugeridas">
-        {POSICIONES_SUGERIDAS.map((p) => (
-          <option key={p} value={p} />
-        ))}
-      </datalist>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Gestión Miembros</h1>
         <div className="flex gap-2">
@@ -116,8 +112,16 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
           <Campo label="Apellidos"><input name="apellidos" className={inputClass} /></Campo>
           <Campo label="Apodo"><input name="apodo" className={inputClass} /></Campo>
           <Campo label="Celular"><input name="telefono" required className={inputClass} /></Campo>
+          <Campo label="DNI"><input name="dni" maxLength={15} className={inputClass} /></Campo>
           <Campo label="Posición">
-            <input name="posicion" list="posiciones-sugeridas" placeholder="Ej: Volante, Cualquiera" className={inputClass} />
+            <select name="posicion" defaultValue="" className={inputClass}>
+              <option value="">Sin definir</option>
+              {POSICIONES_SUGERIDAS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </Campo>
           <Campo label="Contraseña inicial"><input name="password" type="password" required className={inputClass} /></Campo>
           <Campo label="Hincha de qué equipo"><input name="equipoHincha" className={inputClass} /></Campo>
@@ -141,6 +145,8 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                 <thead>
                   <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted)]">
                     <th className="p-3">Jugador</th>
+                    <th className="p-3">Celular</th>
+                    <th className="p-3">DNI</th>
                     <th className="p-3">Rol</th>
                     <th className="p-3">Estado</th>
                   </tr>
@@ -148,7 +154,7 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                 <tbody>
                   {jugadoresFiltrados.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="p-3 text-center text-[var(--muted)]">
+                      <td colSpan={5} className="p-3 text-center text-[var(--muted)]">
                         Ningún jugador coincide con &quot;{busqueda}&quot;.
                       </td>
                     </tr>
@@ -165,6 +171,8 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                     <td className="p-3 font-medium whitespace-nowrap">
                       {nombreCompleto({ apellidos: j.apellidos, apodo: j.apodo, usuario: { nombre: j.nombre } })}
                     </td>
+                    <td className="p-3 whitespace-nowrap">{j.telefono}</td>
+                    <td className="p-3 whitespace-nowrap">{j.dni || "—"}</td>
                     <td className="p-3"><Badge variant="role">{j.rol.toUpperCase()}</Badge></td>
                     <td className="p-3">
                       <Badge variant={j.estado === "activo" ? "active" : "danger"}>{j.estado.toUpperCase()}</Badge>
@@ -206,13 +214,21 @@ export function MiembrosCrud({ jugadores }: { jugadores: Jugador[] }) {
                 <Campo label="Nombres"><input name="nombres" defaultValue={seleccionado.nombre} className={inputClass} /></Campo>
                 <Campo label="Apellidos"><input name="apellidos" defaultValue={seleccionado.apellidos} className={inputClass} /></Campo>
                 <Campo label="Apodo"><input name="apodo" defaultValue={seleccionado.apodo ?? ""} className={inputClass} /></Campo>
+                <Campo label="Celular">
+                  <input value={seleccionado.telefono} disabled className={`${inputClass} opacity-60`} />
+                </Campo>
+                <Campo label="DNI">
+                  <input name="dni" maxLength={15} defaultValue={seleccionado.dni ?? ""} className={inputClass} />
+                </Campo>
                 <Campo label="Posición">
-                  <input
-                    name="posicion"
-                    list="posiciones-sugeridas"
-                    defaultValue={seleccionado.posicion ?? ""}
-                    className={inputClass}
-                  />
+                  <select name="posicion" defaultValue={seleccionado.posicion ?? ""} className={inputClass}>
+                    <option value="">Sin definir</option>
+                    {POSICIONES_SUGERIDAS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
                 </Campo>
                 <Campo label="Hincha de qué equipo"><input name="equipoHincha" defaultValue={seleccionado.equipoHincha} className={inputClass} /></Campo>
                 <Campo label="Camiseta"><input name="camiseta" defaultValue={seleccionado.camiseta} className={inputClass} /></Campo>

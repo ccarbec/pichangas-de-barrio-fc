@@ -45,6 +45,7 @@ model Jugador {
   apodo          String?
   apellidos      String  @default("")
   posicion       String?
+  dni            String?
   equipoHincha   String  @default("") @map("equipo_hincha")
   camiseta       String  @default("")
   fotoImg        Bytes?  @map("foto_img")
