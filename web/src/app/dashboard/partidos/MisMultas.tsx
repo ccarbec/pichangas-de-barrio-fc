@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { subirComprobanteMulta } from "@/actions/multas";
 import { Toast } from "../../components/Toast";
+import { ArchivoInput } from "../../components/ArchivoInput";
 
 type Multa = {
   id: number;
@@ -35,6 +36,7 @@ export function MisMultas({ multas }: { multas: Multa[] }) {
 function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   const etiquetaTipo = multa.tipo === "tardanza" ? "Tardanza" : "No asistencia";
@@ -68,6 +70,7 @@ function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) 
                 setError(resultado.error);
               } else {
                 formRef.current?.reset();
+                setIntento((n) => n + 1);
                 onPagada();
               }
             });
@@ -75,13 +78,14 @@ function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) 
           className="mt-2 flex flex-wrap items-center gap-3"
         >
           <input type="hidden" name="multaId" value={multa.id} />
-          <input
-            type="file"
+          <ArchivoInput
+            key={intento}
+            id={`comprobante-multa-${multa.id}`}
             name="comprobante"
             accept="image/*"
             required
             disabled={pending}
-            className="text-xs text-[var(--muted)]"
+            texto="📎 Selecciona tu comprobante"
           />
           <button
             type="submit"

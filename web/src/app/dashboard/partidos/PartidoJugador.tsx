@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { confirmarAsistencia, cancelarInscripcion } from "@/actions/inscripciones";
 import { registrarPago } from "@/actions/pagos";
 import { Badge } from "../../components/Badge";
+import { ArchivoInput } from "../../components/ArchivoInput";
 import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO } from "@/lib/estilos";
 
 type Partido = {
@@ -112,6 +113,7 @@ export function PartidoJugador({
             <p className="mt-2 text-sm text-emerald-400">Pago verificado. ¡Nos vemos en la cancha!</p>
           ) : (
             <form
+              key={inscripcion.pago?.estado ?? "sin_pago"}
               action={async (formData) => {
                 setError(null);
                 setEnviandoComprobante(true);
@@ -119,25 +121,28 @@ export function PartidoJugador({
                 setEnviandoComprobante(false);
                 if (resultado?.error) setError(resultado.error);
               }}
-              className="mt-3 flex flex-wrap items-center gap-3"
+              className="mt-3 flex flex-col gap-2"
             >
+              <p className="text-sm font-medium">💸 Sube aquí tu comprobante de pago (captura de Yape)</p>
               <input type="hidden" name="inscripcionId" value={inscripcion.id} />
               <input type="hidden" name="monto" value={partido.costoPorJugador} />
-              <input
-                type="file"
-                name="comprobante"
-                accept="image/*"
-                required
-                disabled={enviandoComprobante}
-                className="text-sm text-[var(--muted)]"
-              />
-              <button
-                type="submit"
-                disabled={enviandoComprobante}
-                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
-              >
-                {enviandoComprobante ? "Enviando…" : "Enviar comprobante"}
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <ArchivoInput
+                  id={`comprobante-partido-${inscripcion.id}`}
+                  name="comprobante"
+                  accept="image/*"
+                  required
+                  disabled={enviandoComprobante}
+                  texto="📎 Selecciona tu comprobante"
+                />
+                <button
+                  type="submit"
+                  disabled={enviandoComprobante}
+                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50"
+                >
+                  {enviandoComprobante ? "Enviando…" : "Enviar comprobante"}
+                </button>
+              </div>
             </form>
           )}
         </div>
