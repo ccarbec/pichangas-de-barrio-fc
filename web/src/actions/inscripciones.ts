@@ -4,8 +4,6 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireLogin } from "@/lib/require-auth";
 
-const MAX_ARQUEROS_POR_PARTIDO = 2;
-
 // El cupo (general y de arqueros) se decide DENTRO de esta única sentencia
 // SQL — no con un SELECT para contar y despué un INSERT/UPDATE separado.
 // Si dos jugadores confirman en el mismo instante, cada conexión ejecuta esta
@@ -17,7 +15,8 @@ const MAX_ARQUEROS_POR_PARTIDO = 2;
 async function inscribirJugadorInterno(
   partidoId: number,
   jugadorId: number,
-  cupoMax: number
+  cupoMax: number,
+  arquerosMax: number
 ): Promise<"confirmado" | "lista_espera"> {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`
@@ -38,7 +37,7 @@ async function inscribirJugadorInterno(
             JOIN jugadores j ON j.id = i.jugador_id
             WHERE i.partido_id = ${partidoId} AND i.estado = 'confirmado'
               AND (LOWER(COALESCE(j.posicion, '')) LIKE '%arquero%' OR LOWER(COALESCE(j.posicion, '')) LIKE '%portero%')
-          ) >= ${MAX_ARQUEROS_POR_PARTIDO}
+          ) >= ${arquerosMax}
             THEN 'lista_espera'
           ELSE 'confirmado'
         END,
@@ -68,7 +67,7 @@ export async function confirmarAsistencia(partidoId: number): Promise<{ error?: 
   }
 
   const partido = await prisma.partido.findUniqueOrThrow({ where: { id: partidoId } });
-  await inscribirJugadorInterno(partidoId, jugador.id, partido.cupoMax);
+  await inscribirJugadorInterno(partidoId, jugador.id, partido.cupoMax, partido.arquerosMax);
   revalidatePath("/dashboard/partidos");
   return {};
 }
@@ -82,7 +81,7 @@ export async function agregarJugadorAPartido(partidoId: number, jugadorId: numbe
     return { error: "Ese jugador tiene una multa por no asistencia sin pagar." };
   }
   const partido = await prisma.partido.findUniqueOrThrow({ where: { id: partidoId } });
-  await inscribirJugadorInterno(partidoId, jugadorId, partido.cupoMax);
+  await inscribirJugadorInterno(partidoId, jugadorId, partido.cupoMax, partido.arquerosMax);
   revalidatePath("/dashboard/partidos");
   return {};
 }
@@ -91,6 +90,7 @@ export async function cancelarInscripcion(inscripcionId: number) {
   await requireLogin();
 
   const inscripcion = await prisma.inscripcion.findUniqueOrThrow({ where: { id: inscripcionId } });
+  const partido = await prisma.partido.findUniqueOrThrow({ where: { id: inscripcion.partidoId } });
 
   // Misma idea que inscribirJugadorInterno: elegir "a quién le toca" y
   // confirmarlo es una sola sentencia UPDATE con el candidato como subquery,
@@ -118,7 +118,7 @@ export async function cancelarInscripcion(inscripcionId: number) {
               JOIN jugadores j2 ON j2.id = i2.jugador_id
               WHERE i2.partido_id = ${inscripcion.partidoId} AND i2.estado = 'confirmado'
                 AND (LOWER(COALESCE(j2.posicion, '')) LIKE '%arquero%' OR LOWER(COALESCE(j2.posicion, '')) LIKE '%portero%')
-            ) < ${MAX_ARQUEROS_POR_PARTIDO}
+            ) < ${partido.arquerosMax}
           )
         ORDER BY i.fecha_inscripcion ASC
         LIMIT 1
@@ -200,7 +200,7 @@ export async function marcarAsistenciaMultiple(
 
 export async function guardarPosicionEnCancha(
   inscripcionId: number,
-  equipo: "A" | "B",
+  equipo: string,
   posX: number,
   posY: number
 ) {
@@ -217,7 +217,7 @@ export async function guardarPosicionEnCancha(
 }
 
 export async function guardarFormacionInicial(
-  asignaciones: { inscripcionId: number; equipo: "A" | "B"; posX: number; posY: number }[]
+  asignaciones: { inscripcionId: number; equipo: string; posX: number; posY: number }[]
 ) {
   await requireAdmin();
   if (asignaciones.length === 0) return;

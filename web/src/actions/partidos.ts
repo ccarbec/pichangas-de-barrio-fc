@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/require-auth";
 export async function crearPartido(formData: FormData) {
   await requireAdmin();
 
+  const formato = String(formData.get("formato") ?? "futbol7");
   await prisma.partido.create({
     data: {
       fecha: String(formData.get("fecha")),
@@ -16,6 +17,10 @@ export async function crearPartido(formData: FormData) {
       costoCancha: Number(formData.get("costoCancha")),
       costoPorJugador: Number(formData.get("costoPorJugador")),
       notas: String(formData.get("notas") ?? "").trim() || null,
+      formato: formato === "futbol11" ? "futbol11" : "futbol7",
+      numEquipos: Math.min(3, Math.max(2, Number(formData.get("numEquipos")) || 2)),
+      arquerosMin: Math.max(0, Number(formData.get("arquerosMin")) || 0),
+      arquerosMax: Math.max(1, Number(formData.get("arquerosMax")) || 2),
     },
   });
 
@@ -40,6 +45,10 @@ export async function duplicarPartido(partidoId: number, nuevaFecha: string, nue
       costoCancha: original.costoCancha,
       costoPorJugador: original.costoPorJugador,
       notas: original.notas,
+      formato: original.formato,
+      numEquipos: original.numEquipos,
+      arquerosMin: original.arquerosMin,
+      arquerosMax: original.arquerosMax,
     },
   });
   revalidatePath("/dashboard/partidos");

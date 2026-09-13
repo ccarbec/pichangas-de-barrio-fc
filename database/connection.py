@@ -64,7 +64,11 @@ CREATE TABLE IF NOT EXISTS partidos (
     costo_por_jugador REAL NOT NULL DEFAULT 0,
     notas TEXT,
     estado TEXT NOT NULL DEFAULT 'programado',
-    fecha_creacion TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    fecha_creacion TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    formato TEXT NOT NULL DEFAULT 'futbol7',
+    num_equipos INTEGER NOT NULL DEFAULT 2,
+    arqueros_min INTEGER NOT NULL DEFAULT 1,
+    arqueros_max INTEGER NOT NULL DEFAULT 2
 );
 
 CREATE TABLE IF NOT EXISTS inscripciones (
@@ -192,6 +196,10 @@ MIGRACIONES = [
     "ALTER TABLE inscripciones ADD COLUMN roja INTEGER DEFAULT 0",
     "ALTER TABLE club_config ADD COLUMN qr_yape_img BLOB",
     "ALTER TABLE club_config ADD COLUMN qr_yape_mime TEXT",
+    "ALTER TABLE partidos ADD COLUMN formato TEXT DEFAULT 'futbol7'",
+    "ALTER TABLE partidos ADD COLUMN num_equipos INTEGER DEFAULT 2",
+    "ALTER TABLE partidos ADD COLUMN arqueros_min INTEGER DEFAULT 1",
+    "ALTER TABLE partidos ADD COLUMN arqueros_max INTEGER DEFAULT 2",
 ]
 
 

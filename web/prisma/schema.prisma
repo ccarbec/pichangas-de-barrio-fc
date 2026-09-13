@@ -78,6 +78,14 @@ model Partido {
   estado           String   @default("programado")
   fechaCreacion    String   @default("") @map("fecha_creacion")
 
+  // Formato ('futbol7' | 'futbol11') y número de equipos (2 o 3, para
+  // pichangas con rotación) — usados por src/lib/equipos.ts al armar
+  // equipos y por el tope de arqueros al confirmar asistencia.
+  formato          String   @default("futbol7")
+  numEquipos       Int      @default(2) @map("num_equipos")
+  arquerosMin      Int      @default(1) @map("arqueros_min")
+  arquerosMax      Int      @default(2) @map("arqueros_max")
+
   inscripciones Inscripcion[]
   multas        Multa[]
   galeriaItems  GaleriaItem[]

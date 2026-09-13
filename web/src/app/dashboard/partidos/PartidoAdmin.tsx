@@ -53,6 +53,9 @@ type Partido = {
   costoCancha: number;
   costoPorJugador: number;
   estado: string;
+  numEquipos: number;
+  arquerosMin: number;
+  arquerosMax: number;
 };
 
 export function PartidoAdmin({
@@ -94,7 +97,7 @@ export function PartidoAdmin({
     statTecnica: i.jugador.statTecnica ?? 3,
     statDefensa: i.jugador.statDefensa ?? 3,
     statFisico: i.jugador.statFisico ?? 3,
-    equipo: (i.equipo as "A" | "B" | null) ?? null,
+    equipo: i.equipo ?? null,
     posX: i.posX ?? null,
     posY: i.posY ?? null,
     asistio: i.asistio,
@@ -155,9 +158,14 @@ export function PartidoAdmin({
             />
           </div>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Cupo {confirmados.length}/{partido.cupoMax} · 🧤 Arqueros {arquerosConfirmados}/2 · Cancha S/{" "}
+            Cupo {confirmados.length}/{partido.cupoMax} · 🧤 Arqueros {arquerosConfirmados}/{partido.arquerosMax} · Cancha S/{" "}
             {partido.costoCancha.toFixed(2)} · S/ {partido.costoPorJugador.toFixed(2)} por jugador
           </p>
+          {arquerosConfirmados < partido.arquerosMin && (
+            <p className="mt-1 text-xs text-amber-400">
+              ⚠️ Faltan arqueros — necesitas al menos {partido.arquerosMin}.
+            </p>
+          )}
         </div>
 
         {partido.estado === "programado" && (
@@ -204,7 +212,7 @@ export function PartidoAdmin({
             📥 Exportar a Excel
           </button>
         )}
-        {confirmados.length >= 2 && (
+        {confirmados.length >= partido.numEquipos && (
           <button
             onClick={() => setMostrarCampo((v) => !v)}
             className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)]"
@@ -215,7 +223,12 @@ export function PartidoAdmin({
       </div>
 
       {mostrarCampo && (
-        <CampoDeJuego partidoId={partido.id} jugadores={jugadoresParaCancha} onCerrar={() => setMostrarCampo(false)} />
+        <CampoDeJuego
+          partidoId={partido.id}
+          jugadores={jugadoresParaCancha}
+          numEquipos={partido.numEquipos}
+          onCerrar={() => setMostrarCampo(false)}
+        />
       )}
 
       {verInscritos && (

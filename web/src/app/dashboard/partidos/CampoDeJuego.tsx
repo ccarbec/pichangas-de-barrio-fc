@@ -22,7 +22,7 @@ export type JugadorCancha = {
   statTecnica: number;
   statDefensa: number;
   statFisico: number;
-  equipo: "A" | "B" | null;
+  equipo: string | null;
   posX: number | null;
   posY: number | null;
   asistio: string | null;
@@ -31,12 +31,31 @@ export type JugadorCancha = {
   roja: boolean;
 };
 
-const X_POR_CATEGORIA: Record<"A" | "B", Record<string, number>> = {
-  A: { arquero: 8, defensa: 25, mediocampo: 37, delantero: 46, otros: 20 },
-  B: { arquero: 92, defensa: 75, mediocampo: 63, delantero: 54, otros: 80 },
+const LETRAS_EQUIPO = ["A", "B", "C"] as const;
+const COLOR_BORDE_EQUIPO: Record<string, string> = {
+  A: "border-blue-400",
+  B: "border-red-400",
+  C: "border-amber-400",
 };
 
-function posicionesIniciales(jugadores: JugadorCancha[]): JugadorCancha[] {
+// Perfil de posición x (0-1, relativo al ancho de la banda de cada equipo)
+// según hacia qué lado "ataca" ese equipo — igual que antes para 2 equipos,
+// alternado en zigzag para 3 (ver bandaXPorCategoria).
+const PERFIL_DERECHA: Record<string, number> = { arquero: 0.16, otros: 0.4, defensa: 0.5, mediocampo: 0.74, delantero: 0.92 };
+const PERFIL_IZQUIERDA: Record<string, number> = { arquero: 0.84, otros: 0.6, defensa: 0.5, mediocampo: 0.26, delantero: 0.08 };
+
+function bandaXPorCategoria(indiceEquipo: number, numEquipos: number): Record<string, number> {
+  const ancho = 100 / numEquipos;
+  const inicio = indiceEquipo * ancho;
+  const perfil = indiceEquipo % 2 === 0 ? PERFIL_DERECHA : PERFIL_IZQUIERDA;
+  const resultado: Record<string, number> = {};
+  for (const cat of Object.keys(perfil)) {
+    resultado[cat] = inicio + perfil[cat] * ancho;
+  }
+  return resultado;
+}
+
+function posicionesIniciales(jugadores: JugadorCancha[], numEquipos: number): JugadorCancha[] {
   const paraArmar: JugadorParaEquipo[] = jugadores.map((j) => ({
     id: j.jugadorId,
     nombre: j.nombre,
@@ -47,11 +66,12 @@ function posicionesIniciales(jugadores: JugadorCancha[]): JugadorCancha[] {
     statDefensa: j.statDefensa,
     statFisico: j.statFisico,
   }));
-  const { equipoA, equipoB } = armarEquipos(paraArmar);
+  const equipos = armarEquipos(paraArmar, numEquipos);
   const porJugadorId = new Map(jugadores.map((j) => [j.jugadorId, j]));
 
-  function ubicar(equipo: JugadorParaEquipo[], lado: "A" | "B"): JugadorCancha[] {
-    const xPorCategoria = X_POR_CATEGORIA[lado];
+  function ubicar(equipo: JugadorParaEquipo[], indice: number): JugadorCancha[] {
+    const letra = LETRAS_EQUIPO[indice] ?? String(indice + 1);
+    const xPorCategoria = bandaXPorCategoria(indice, numEquipos);
     const porCategoria = new Map<string, JugadorParaEquipo[]>();
     for (const j of equipo) {
       const cat = categoriaPosicion(j.posicion);
@@ -61,32 +81,34 @@ function posicionesIniciales(jugadores: JugadorCancha[]): JugadorCancha[] {
     }
     const resultado: JugadorCancha[] = [];
     for (const [cat, lista] of porCategoria) {
-      const x = xPorCategoria[cat] ?? 30;
+      const x = xPorCategoria[cat] ?? (indice + 0.5) * (100 / numEquipos);
       lista.forEach((j, idx) => {
         const y = ((idx + 1) * 100) / (lista.length + 1);
         const original = porJugadorId.get(j.id);
         if (!original) return;
-        resultado.push({ ...original, equipo: lado, posX: x, posY: y });
+        resultado.push({ ...original, equipo: letra, posX: x, posY: y });
       });
     }
     return resultado;
   }
 
-  return [...ubicar(equipoA, "A"), ...ubicar(equipoB, "B")];
+  return equipos.flatMap((equipo, indice) => ubicar(equipo, indice));
 }
 
 export function CampoDeJuego({
   partidoId,
   jugadores,
+  numEquipos,
   onCerrar,
 }: {
   partidoId: number;
   jugadores: JugadorCancha[];
+  numEquipos: number;
   onCerrar: () => void;
 }) {
   const [lista, setLista] = useState<JugadorCancha[]>(() => {
     const faltaFormacion = jugadores.some((j) => j.equipo == null || j.posX == null || j.posY == null);
-    return faltaFormacion ? posicionesIniciales(jugadores) : jugadores;
+    return faltaFormacion ? posicionesIniciales(jugadores, numEquipos) : jugadores;
   });
   const [seleccionado, setSeleccionado] = useState<JugadorCancha | null>(null);
   const contenedorRef = useRef<HTMLDivElement>(null);
@@ -109,7 +131,7 @@ export function CampoDeJuego({
   const arrastre = useRef<{ inscripcionId: number; movio: boolean } | null>(null);
 
   function sortearEquipos() {
-    const nuevaLista = posicionesIniciales(lista);
+    const nuevaLista = posicionesIniciales(lista, numEquipos);
     setLista(nuevaLista);
     setSeleccionado(null);
     guardarFormacionInicial(
@@ -160,7 +182,7 @@ export function CampoDeJuego({
           <button
             onClick={sortearEquipos}
             className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium transition-colors hover:border-[var(--accent)]"
-            title="Reparte a los jugadores en dos equipos al azar, buscando que el nivel (estadísticas) quede parejo"
+            title={`Reparte a los jugadores en ${numEquipos} equipos al azar, buscando que el nivel (estadísticas) quede parejo`}
           >
             🎲 Sortear equipos
           </button>
@@ -175,7 +197,13 @@ export function CampoDeJuego({
         className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border-2 border-white/20"
         style={{ background: "linear-gradient(90deg, #2d7a3a 0%, #35873f 50%, #2d7a3a 100%)" }}
       >
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-white/40" />
+        {Array.from({ length: numEquipos - 1 }, (_, i) => (
+          <div
+            key={i}
+            className="pointer-events-none absolute inset-y-0 w-px bg-white/40"
+            style={{ left: `${((i + 1) * 100) / numEquipos}%` }}
+          />
+        ))}
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
 
         {lista.map((j) => (
@@ -188,7 +216,7 @@ export function CampoDeJuego({
             className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none select-none flex-col items-center gap-0.5 active:cursor-grabbing"
           >
             <div
-              className={`relative h-10 w-10 overflow-hidden rounded-full border-2 bg-[var(--surface)] shadow-lg sm:h-12 sm:w-12 ${j.equipo === "A" ? "border-blue-400" : "border-red-400"}`}
+              className={`relative h-10 w-10 overflow-hidden rounded-full border-2 bg-[var(--surface)] shadow-lg sm:h-12 sm:w-12 ${COLOR_BORDE_EQUIPO[j.equipo ?? "A"] ?? "border-gray-400"}`}
             >
               {j.foto ? (
                 // eslint-disable-next-line @next/next/no-img-element
