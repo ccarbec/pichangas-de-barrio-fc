@@ -13,7 +13,7 @@ export default async function PartidosPage() {
   if (!usuario) return null;
   const esAdmin = usuario.rol === "admin";
 
-  const [jugadorActual, programados, historial, estadios, jugadoresRegistrados] = await Promise.all([
+  const [jugadorActual, programados, historial, estadios, jugadoresRegistrados, clubConfig] = await Promise.all([
     prisma.jugador.findUnique({ where: { usuarioId: usuario.id } }),
     prisma.partido.findMany({ where: { estado: "programado" }, orderBy: [{ fecha: "asc" }, { hora: "asc" }] }),
     prisma.partido.findMany({
@@ -34,7 +34,14 @@ export default async function PartidosPage() {
           orderBy: [{ apellidos: "asc" }],
         })
       : Promise.resolve([]),
+    !esAdmin ? prisma.clubConfig.findUnique({ where: { id: 1 } }) : Promise.resolve(null),
   ]);
+
+  const datosYape = {
+    qrYape: aDataUrl(clubConfig?.qrYapeImg ?? null, clubConfig?.qrYapeMime ?? null),
+    nombreYape: clubConfig?.nombreYape ?? null,
+    telefonoYape: clubConfig?.telefonoYape ?? null,
+  };
 
   const todosPartidos = [...programados, ...historial];
   const partidoIds = todosPartidos.map((p) => p.id);
@@ -143,7 +150,9 @@ export default async function PartidosPage() {
 
       {esAdmin && <NuevoPartidoForm estadios={estadios} />}
 
-      {!esAdmin && misMultasConEtiqueta.length > 0 && <MisMultas multas={misMultasConEtiqueta} />}
+      {!esAdmin && misMultasConEtiqueta.length > 0 && (
+        <MisMultas multas={misMultasConEtiqueta} datosYape={datosYape} />
+      )}
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -169,6 +178,7 @@ export default async function PartidosPage() {
               inscripcion={miInscripcionPorPartido.get(partido.id) ?? null}
               confirmados={confirmadosPorPartido.get(partido.id) ?? 0}
               arquerosConfirmados={arquerosConfirmadosPorPartido.get(partido.id) ?? 0}
+              datosYape={datosYape}
             />
           ) : null
         )}

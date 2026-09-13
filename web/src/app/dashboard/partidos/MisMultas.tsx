@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from "react";
 import { subirComprobanteMulta } from "@/actions/multas";
 import { Toast } from "../../components/Toast";
 import { ArchivoInput } from "../../components/ArchivoInput";
+import { YapeQR } from "../../components/YapeQR";
 
 type Multa = {
   id: number;
@@ -14,7 +15,9 @@ type Multa = {
   partidoEtiqueta: string | null;
 };
 
-export function MisMultas({ multas }: { multas: Multa[] }) {
+type DatosYape = { qrYape: string | null; nombreYape: string | null; telefonoYape: string | null };
+
+export function MisMultas({ multas, datosYape }: { multas: Multa[]; datosYape: DatosYape }) {
   const [toast, setToast] = useState<string | null>(null);
 
   return (
@@ -26,14 +29,19 @@ export function MisMultas({ multas }: { multas: Multa[] }) {
       </p>
       <div className="flex flex-col gap-3">
         {multas.map((m) => (
-          <MultaItem key={m.id} multa={m} onPagada={() => setToast("Comprobante enviado — esperando verificación.")} />
+          <MultaItem
+            key={m.id}
+            multa={m}
+            datosYape={datosYape}
+            onPagada={() => setToast("Comprobante enviado — esperando verificación.")}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) {
+function MultaItem({ multa, datosYape, onPagada }: { multa: Multa; datosYape: DatosYape; onPagada: () => void }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
@@ -75,9 +83,11 @@ function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) 
               }
             });
           }}
-          className="mt-2 flex flex-wrap items-center gap-3"
+          className="mt-2 flex flex-col gap-2"
         >
+          <YapeQR {...datosYape} />
           <input type="hidden" name="multaId" value={multa.id} />
+          <div className="flex flex-wrap items-center gap-3">
           <ArchivoInput
             key={intento}
             id={`comprobante-multa-${multa.id}`}
@@ -94,6 +104,7 @@ function MultaItem({ multa, onPagada }: { multa: Multa; onPagada: () => void }) 
           >
             {pending ? "Enviando…" : "💵 Enviar comprobante de pago"}
           </button>
+          </div>
         </form>
       )}
 

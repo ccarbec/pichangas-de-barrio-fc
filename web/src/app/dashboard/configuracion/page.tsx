@@ -30,6 +30,7 @@ export default async function ConfiguracionPage() {
         telefonoYape: config?.telefonoYape ?? "",
         montoMultaTardanza: config?.montoMultaTardanza ?? 5,
         montoMultaNoAsistio: config?.montoMultaNoAsistio ?? 10,
+        qrYape: aDataUrl(config?.qrYapeImg ?? null, config?.qrYapeMime ?? null),
       }}
       plantillas={plantillas}
     />

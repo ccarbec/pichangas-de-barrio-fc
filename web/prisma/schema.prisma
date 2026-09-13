@@ -131,11 +131,13 @@ model Pago {
 }
 
 model ClubConfig {
-  id                   Int    @id @default(1)
+  id                   Int     @id @default(1)
   nombreYape           String? @map("nombre_yape")
   telefonoYape         String? @map("telefono_yape")
   montoMultaTardanza   Float?  @default(5.0) @map("monto_multa_tardanza")
   montoMultaNoAsistio  Float?  @default(10.0) @map("monto_multa_no_asistio")
+  qrYapeImg            Bytes?  @map("qr_yape_img")
+  qrYapeMime           String? @map("qr_yape_mime")
 
   @@map("club_config")
 }

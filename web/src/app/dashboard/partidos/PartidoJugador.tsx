@@ -5,6 +5,7 @@ import { confirmarAsistencia, cancelarInscripcion } from "@/actions/inscripcione
 import { registrarPago } from "@/actions/pagos";
 import { Badge } from "../../components/Badge";
 import { ArchivoInput } from "../../components/ArchivoInput";
+import { YapeQR } from "../../components/YapeQR";
 import { ETIQUETA_INSCRIPCION, ETIQUETA_PAGO } from "@/lib/estilos";
 
 type Partido = {
@@ -23,17 +24,21 @@ type Inscripcion = {
   pago: { estado: string; nota: string | null } | null;
 } | null;
 
+type DatosYape = { qrYape: string | null; nombreYape: string | null; telefonoYape: string | null };
+
 export function PartidoJugador({
   partido,
   inscripcion,
   confirmados,
   arquerosConfirmados,
+  datosYape,
 }: {
   partido: Partido;
   jugadorId: number;
   inscripcion: Inscripcion;
   confirmados: number;
   arquerosConfirmados: number;
+  datosYape: DatosYape;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +128,7 @@ export function PartidoJugador({
               }}
               className="mt-3 flex flex-col gap-2"
             >
+              <YapeQR {...datosYape} />
               <p className="text-sm font-medium">💸 Sube aquí tu comprobante de pago (captura de Yape)</p>
               <input type="hidden" name="inscripcionId" value={inscripcion.id} />
               <input type="hidden" name="monto" value={partido.costoPorJugador} />

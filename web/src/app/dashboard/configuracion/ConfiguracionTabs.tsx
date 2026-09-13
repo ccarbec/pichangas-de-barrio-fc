@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { crearEstadio, actualizarEstadio, cambiarEstadoEstadio, subirFotoEstadio } from "@/actions/estadios";
-import { guardarClubConfig } from "@/actions/club-config";
+import { guardarClubConfig, subirQrYape } from "@/actions/club-config";
 import { crearPlantilla, actualizarPlantilla, eliminarPlantilla } from "@/actions/plantillas";
 import { TIPOS_PLANTILLA, type TipoPlantilla } from "@/lib/plantillas";
 import { Badge } from "../../components/Badge";
@@ -21,6 +21,7 @@ type Config = {
   telefonoYape: string;
   montoMultaTardanza: number;
   montoMultaNoAsistio: number;
+  qrYape: string | null;
 };
 type Plantillas = Record<TipoPlantilla, { id: number; texto: string }[]>;
 
@@ -224,42 +225,93 @@ function YapeTab({ config }: { config: Config }) {
   const [toast, setToast] = useState<string | null>(null);
 
   return (
-    <form
-      action={(fd) => {
-        setError(null);
-        startTransition(async () => {
-          try {
-            await guardarClubConfig(fd);
-            setToast("Configuración guardada.");
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Error");
-          }
-        });
-      }}
-      className="grid max-w-md grid-cols-1 gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5"
-    >
+    <div className="flex max-w-md flex-col gap-4">
+      <QrYapeCard qrYape={config.qrYape} />
+
+      <form
+        action={(fd) => {
+          setError(null);
+          startTransition(async () => {
+            try {
+              await guardarClubConfig(fd);
+              setToast("Configuración guardada.");
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Error");
+            }
+          });
+        }}
+        className="grid grid-cols-1 gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5"
+      >
+        {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
+        <div>
+          <label className="mb-1 block text-xs text-[var(--muted)]">Nombre en Yape</label>
+          <input name="nombreYape" defaultValue={config.nombreYape} className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-[var(--muted)]">Celular Yape</label>
+          <input name="telefonoYape" defaultValue={config.telefonoYape} className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-[var(--muted)]">Multa por tardanza (S/)</label>
+          <input name="montoMultaTardanza" type="number" step="0.5" defaultValue={config.montoMultaTardanza} className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-[var(--muted)]">Multa por no asistir (S/)</label>
+          <input name="montoMultaNoAsistio" type="number" step="0.5" defaultValue={config.montoMultaNoAsistio} className={inputClass} />
+        </div>
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+        <button type="submit" disabled={pending} className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">
+          💾 Guardar configuración
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function QrYapeCard({ qrYape }: { qrYape: string | null }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
       {toast && <Toast mensaje={toast} onCerrar={() => setToast(null)} />}
-      <div>
-        <label className="mb-1 block text-xs text-[var(--muted)]">Nombre en Yape</label>
-        <input name="nombreYape" defaultValue={config.nombreYape} className={inputClass} />
+      <p className="mb-3 text-sm font-semibold">📱 QR de Yape</p>
+      <p className="mb-3 text-xs text-[var(--muted)]">
+        Los jugadores lo van a ver justo donde suben su comprobante, para que puedan yapear escaneándolo ahí mismo.
+      </p>
+      <div className="mb-3 flex items-center gap-4">
+        {qrYape ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={qrYape} alt="QR de Yape" className="h-32 w-32 rounded-lg border border-[var(--border)] object-contain bg-white p-1" />
+        ) : (
+          <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-[var(--background)] text-center text-xs text-[var(--muted)]">
+            Sin QR todavía
+          </div>
+        )}
       </div>
-      <div>
-        <label className="mb-1 block text-xs text-[var(--muted)]">Celular Yape</label>
-        <input name="telefonoYape" defaultValue={config.telefonoYape} className={inputClass} />
-      </div>
-      <div>
-        <label className="mb-1 block text-xs text-[var(--muted)]">Multa por tardanza (S/)</label>
-        <input name="montoMultaTardanza" type="number" step="0.5" defaultValue={config.montoMultaTardanza} className={inputClass} />
-      </div>
-      <div>
-        <label className="mb-1 block text-xs text-[var(--muted)]">Multa por no asistir (S/)</label>
-        <input name="montoMultaNoAsistio" type="number" step="0.5" defaultValue={config.montoMultaNoAsistio} className={inputClass} />
-      </div>
-      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
-      <button type="submit" disabled={pending} className="mt-1 self-start rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition-opacity hover:opacity-90 disabled:hover:opacity-100">
-        💾 Guardar configuración
-      </button>
-    </form>
+      <form
+        action={(fd) => {
+          setError(null);
+          startTransition(async () => {
+            const resultado = await subirQrYape(fd);
+            if (resultado?.error) setError(resultado.error);
+            else setToast("QR actualizado.");
+          });
+        }}
+        className="flex flex-wrap items-center gap-2"
+      >
+        <input type="file" name="qr" accept="image/*" className="text-xs" />
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition-colors hover:border-[var(--accent)] disabled:opacity-60"
+        >
+          {pending ? "Subiendo…" : "Subir QR"}
+        </button>
+      </form>
+      {error && <p className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
+    </div>
   );
 }
 
